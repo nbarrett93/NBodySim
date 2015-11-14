@@ -1,0 +1,17 @@
+
+Model:
+	Identity matrix
+View:
+	Depends upon camera position, orientation, & target
+	In Interactive mode, camera position will be calculated in the OpenCL kernel
+Projection:
+	Constant (aside from FOV, AR, & clipping)
+
+Vertex Shader:
+	Inputs:
+		MVP mat4 (uniform)
+		Normal mat4 (uniform)
+		Position vec4 (instance data)
+		Color vec4 (instance data)
+		Vertex vec4 (vertex position w.r.t model)
+		Normal vec3 (face normals for model)
