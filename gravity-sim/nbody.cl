@@ -5,8 +5,8 @@ __kernel void calc_next(global const float  *masses,
 					    global const float3 *cur_pos,
 					    global       float3 *new_pos,
 					    global       float  *color_out,
-					           const float   time_step1,
-							   const float   time_step2)
+					           const float   c1,		// needs to be calculated by CPU
+							   const float   c2)		// similarly
 { 
 	size_t g_size = get_global_size(0);
 	size_t g_id   = get_global_id(0);
@@ -31,8 +31,8 @@ __kernel void calc_next(global const float  *masses,
 
 	accel *= N_GRAV_CONST;
 
-	float c1 = time_step1 / time_step2;
-	float c2 = 0.5f * (time_step1 + time_step2) * time_step1;
+	//float c1 = time_step1 / time_step2;
+	//float c2 = 0.5f * (time_step1 + time_step2) * time_step1;
 	new_pos[g_id] = my_pos + 
 		(my_pos - prev_pos[g_id]) * c1 + 
 		c2 * accel;

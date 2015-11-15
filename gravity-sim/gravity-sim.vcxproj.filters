@@ -36,6 +36,9 @@
     <ClCompile Include="camera.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="particle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Intel_OpenCL_Build_Rules Include="nbody.cl">
@@ -49,9 +52,7 @@
     <None Include="frag_shader.frag">
       <Filter>Shaders</Filter>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <Xml Include="glew32.dll" />
+    <None Include="glew32.dll" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="util.h">
@@ -61,6 +62,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="particle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjLoader.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

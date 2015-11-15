@@ -9,8 +9,8 @@ class Camera
 private:
 	const float m_fov;
 	const float m_aspect_ratio;
-	const float m_near_clip = 0.1f;
-	const float m_far_clip = 100.0f;
+	const float m_near_clip;
+	const float m_far_clip;
 
 	glm::mat4 m_view_proj;
 
@@ -20,7 +20,7 @@ private:
 	glm::vec3 m_velocity;
 
 public:
-	Camera(float FoV, float aspect_ratio);
+	Camera(float FoV, float aspect_ratio, float near_clip = 0.1f, float far_clip = 100.0f);
 
 	void gen_mat();
 

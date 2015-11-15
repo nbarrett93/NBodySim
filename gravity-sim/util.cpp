@@ -119,6 +119,7 @@ CL_Components& CL_Components::init()
 		return *this;
 	}
 
+	// ensure we have at least 1 platform
 	if (num_platforms == 0)
 	{
 		return *this;
@@ -126,6 +127,7 @@ CL_Components& CL_Components::init()
 
 	platform_ids = new cl_platform_id[num_platforms];
 
+	// read out all platform IDs
 	if (clGetPlatformIDs(num_platforms, platform_ids, NULL) != CL_SUCCESS)
 	{
 		if (platform_ids != NULL) 
@@ -135,11 +137,13 @@ CL_Components& CL_Components::init()
 
 	for (cl_uint i = 0; i < num_platforms; ++i)
 	{
+		// TODO: dump platform info to log
+
 		cl_uint num_devices;
-		// count # of devices
+		// count # of devices which are GPU
 		if (clGetDeviceIDs(platform_ids[i], CL_DEVICE_TYPE_GPU, 0, NULL, &num_devices) != CL_SUCCESS)
 		{
-			if (platform_ids != NULL) 
+			if (platform_ids != NULL)
 				delete[] platform_ids;
 			return *this;
 		}
@@ -159,6 +163,7 @@ CL_Components& CL_Components::init()
 			}
 
 			// default device (hopefully a good one!)
+			// TODO: should probably dump all devices to log
 			device = device_ids[0];
 			platform = platform_ids[i];
 
@@ -168,6 +173,7 @@ CL_Components& CL_Components::init()
 				delete[] device_ids;
 
 			// stop scanning platforms; we found a GPU
+			m_success = true;
 			break;
 		}
 	}
@@ -175,7 +181,51 @@ CL_Components& CL_Components::init()
 	if (platform_ids != NULL)
 		delete[] platform_ids;
 
-	m_success = true;
+	return *this;
+}
+
+CL_Components& CL_Components::setCtx(HGLRC ctx, HDC dc)
+{
+	m_success = false;
+
+	cl_context_properties properties[] =
+	{
+		CL_GL_CONTEXT_KHR, (cl_context_properties)ctx,
+		CL_WGL_HDC_KHR, (cl_context_properties)dc,
+		CL_CONTEXT_PLATFORM, (cl_context_properties)platform,
+		0
+	};
+
+	cl_context cl_ctx = clCreateContext(properties, 1, &device, NULL, NULL, &m_cl_err);
+
+	if (m_cl_err == CL_SUCCESS)
+	{
+		cl_command_queue queue = clCreateCommandQueue(cl_ctx, device, NULL, &m_cl_err);
+
+		if (m_cl_err != CL_SUCCESS)
+		{
+			clReleaseContext(cl_ctx);
+			return *this;
+		}
+
+		queue = queue;
+		context = cl_ctx;
+		m_success = true;
+	}
 
 	return *this;
+}
+
+CL_Components::CL_Components(CL_Components &&rhs) :
+	m_success(rhs.m_success),
+	m_cl_err(rhs.m_cl_err),
+	platform(rhs.platform),
+	device(rhs.device),
+	context(rhs.context),
+	queue(rhs.queue)
+{
+	rhs.platform = 0;
+	rhs.device = 0;
+	rhs.context = 0;
+	rhs.queue = 0;
 }

@@ -199,14 +199,12 @@ If exist "*.vert" copy "*.vert" "$(OutDir)\"</Command>
   </ItemGroup>
   <ItemGroup>
     <None Include="frag_shader.frag" />
-    <Xml Include="glew32.dll">
-      <DeploymentContent>true</DeploymentContent>
-      <FileType>Document</FileType>
-    </Xml>
+    <None Include="glew32.dll" />
     <None Include="vert_shader.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
+    <ClInclude Include="ObjLoader.hpp" />
     <ClInclude Include="particle.h" />
     <ClInclude Include="util.h" />
   </ItemGroup>

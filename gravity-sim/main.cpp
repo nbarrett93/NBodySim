@@ -7,28 +7,31 @@
 #include <GLFW/glfw3.h>
 #include <CL/opencl.h>
 #include <Windows.h>
+#include <glm/common.hpp>
 
 #include "util.h"
 #include "particle.h"
 
 static void error_callback(int error, const char* description)
 {
+	// TODO: make this go to log
 	std::cerr << description << std::endl;
 }
 
-static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
-{
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, GL_TRUE);
-}
+static void run_main_loop(CL_Components &&cl_state, GLFWwindow *window);
 
 int main()
 {
-	bool succ = false;
-	CL_Components cl_objs = get_CL_components(succ);
+	// TODO: instantiate logger
+	// TODO: instantiate config reader
 
-	if (!succ)
+	CL_Components cl_state;
+
+	if (!cl_state.init().success())
+	{
+		// TODO: log failure
 		return -1;
+	}
 
 	glfwSetErrorCallback(error_callback);
 
@@ -50,17 +53,10 @@ int main()
 	}
 
 	glfwMakeContextCurrent(window);
-	
-	cl_context_properties properties[] = 
-	{
-		CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),
-		CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
-		CL_CONTEXT_PLATFORM, (cl_context_properties)cl_objs.platform,
-		0
-	};
 
-	if (!finish_CL_components(cl_objs, properties))
+	if (!cl_state.setCtx(wglGetCurrentContext(), wglGetCurrentDC()).success())
 	{
+		// TODO: log failure
 		glfwDestroyWindow(window);
 		glfwTerminate();
 		return -1;
@@ -69,47 +65,62 @@ int main()
 	glewExperimental = GL_TRUE;
 	if (glewInit() != GLEW_OK)
 	{
+		// TODO: log failure
 		glfwDestroyWindow(window);
 		glfwTerminate();
 		return -1;
 	}
 
-	/*
-	Initialize OpenCL & OpenGL memory structures here
-	/****************************************************/
-	ParticleSystem system(cl_objs);
-
-	glfwSwapInterval(1);
-
-	glfwSetKeyCallback(window, key_callback);
-
-	glClearColor(0, 1.0f, 0, 0);
-
-	while (!glfwWindowShouldClose(window))
-	{
-		/*
-		Do OpenCL stuff here
-		/*************************************************/
-
-
-
-		/*
-		Do OpenGL stuff here
-		/*************************************************/
-
-
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		
-
-		glFinish();
-
-		glfwSwapBuffers(window);
-		glfwPollEvents();
-	}
+	run_main_loop(std::move(cl_state), window);
 
 	glfwDestroyWindow(window);
 
 	glfwTerminate();
 	return 0;
+}
+
+static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	// TODO: send this info to the particle system
+	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, GL_TRUE);
+}
+
+static void run_main_loop(CL_Components &&cl_state, GLFWwindow *window)
+{
+	// TODO: take these from config
+	const float FieldOfView = 3.14159265359f / 3.0f,
+		AspectRatio = 4.0f / 3.0f;
+
+	ParticleSystem system(
+		cl_state,
+		{ FieldOfView, AspectRatio });
+
+	glfwSwapInterval(1);
+
+	glfwSetKeyCallback(window, key_callback);
+
+	glClearColor(0, 0, 0, 0);
+
+	float dt = 0.033f;
+	bool first = true;
+	glfwSetTime(0.0);
+
+	while (!glfwWindowShouldClose(window))
+	{
+		dt = first ? dt : glfwGetTime();
+		first = false;
+		glfwSetTime(0.0);
+
+		system.delta(dt);
+		/*
+		Removed for dev of GL system since CL depends upon it
+		*/
+		//system.run_CL();
+
+		system.draw();
+
+		glfwSwapBuffers(window);
+		glfwPollEvents();
+	}
 }
