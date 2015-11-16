@@ -180,10 +180,8 @@
       <SubSystem>Console</SubSystem>
     </Link>
     <PostBuildEvent>
-      <Command>If exist "*.cl" copy "*.cl" "$(ProjectDir)\resources\kernels"
-If exist "glew32.dll" copy "glew32.dll" "$(ProjectDir)\"
-If exist "*.frag" copy "*.frag" "$(ProjectDir)\resources\shaders"
-If exist "*.vert" copy "*.vert" "$(ProjectDir)\resources\shaders"</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -193,14 +191,9 @@ If exist "*.vert" copy "*.vert" "$(ProjectDir)\resources\shaders"</Command>
     <ClCompile Include="util.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Intel_OpenCL_Build_Rules Include="nbody.cl">
-      <Device Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">1</Device>
-    </Intel_OpenCL_Build_Rules>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="frag_shader.frag" />
     <None Include="glew32.dll" />
-    <None Include="vert_shader.vert" />
+    <None Include="resources\shaders\frag_shader.frag" />
+    <None Include="resources\shaders\vert_shader.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
@@ -210,6 +203,9 @@ If exist "*.vert" copy "*.vert" "$(ProjectDir)\resources\shaders"</Command>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Math.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Intel_OpenCL_Build_Rules Include="resources\kernels\nbody.cl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

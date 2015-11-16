@@ -227,9 +227,9 @@ Model<T> Model<T>::FromStream(std::istream &s)
 			if (s.peek() == '\r' || s.peek() == '\n')
 			{
 				s.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-				break;
+				//break;
 			}
-			Faces.emplace_back(std::move(face));
+			Faces.push_back(face);
 			break;
 		default:
 			s.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -247,10 +247,16 @@ Model<T> Model<T>::FromStream(std::istream &s)
 
 	std::multimap<KeyType, ValType> cache;
 
+	bool have_verts = GeomVerts.size() != 0;
+	bool have_norm = Normals.size() != 0;
+	bool have_tex = TexCoords.size() != 0;
+
 	uint16_t ix = 0;
 	// foreach (Face f : Faces)
-	for (Face_<T> &face : Faces)
+	for (uint32_t i = 0; i < Faces.size(); ++i)
 	{
+		Face_<T> &face = Faces[i];
+
 		Face<T> f;
 		
 		// foreach (Vert v : f)
@@ -265,9 +271,12 @@ Model<T> Model<T>::FromStream(std::istream &s)
 			{
 				// it's a new vertex
 				f.Vertices[j] = ix;
-				ret.Vertices.push_back(GeomVerts[pos_i]);
-				ret.Normals.push_back(Normals[norm_i]);
-				ret.TexCoords.push_back(TexCoords[tex_i]);
+				if (have_verts)
+					ret.Vertices.push_back(GeomVerts[pos_i]);
+				if (have_norm)
+					ret.Normals.push_back(Normals[norm_i]);
+				if (have_tex)
+					ret.TexCoords.push_back(TexCoords[tex_i]);
 
 				cache.insert(std::make_pair(
 					face.v[j],
@@ -305,9 +314,12 @@ Model<T> Model<T>::FromStream(std::istream &s)
 				{
 					// we have to create a new index
 					f.Vertices[j] = ix;
-					ret.Vertices.push_back(GeomVerts[pos_i]);
-					ret.Normals.push_back(Normals[norm_i]);
-					ret.TexCoords.push_back(TexCoords[tex_i]);
+					if (have_verts)
+						ret.Vertices.push_back(GeomVerts[pos_i]);
+					if (have_norm)
+						ret.Normals.push_back(Normals[norm_i]);
+					if (have_tex)
+						ret.TexCoords.push_back(TexCoords[tex_i]);
 
 					cache.insert(std::make_pair(
 						face.v[j],

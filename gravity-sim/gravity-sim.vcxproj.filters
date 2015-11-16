@@ -41,18 +41,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Intel_OpenCL_Build_Rules Include="nbody.cl">
-      <Filter>OpenCL Files</Filter>
-    </Intel_OpenCL_Build_Rules>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="vert_shader.vert">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="frag_shader.frag">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="glew32.dll" />
+    <None Include="resources\shaders\frag_shader.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\shaders\vert_shader.vert">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="util.h">
@@ -72,5 +67,10 @@
     <Text Include="Math.txt">
       <Filter>Notes</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Intel_OpenCL_Build_Rules Include="resources\kernels\nbody.cl">
+      <Filter>OpenCL Files</Filter>
+    </Intel_OpenCL_Build_Rules>
   </ItemGroup>
 </Project>

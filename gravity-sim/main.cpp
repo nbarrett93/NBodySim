@@ -24,8 +24,28 @@ static void error_callback(int error, const char* description)
 
 static void run_main_loop(CL_Components &&cl_state, GLFWwindow *window);
 
+static void test_obj_ldr()
+{
+	bool succ = false;
+	std::string s = read_file("resources/models/sphere.obj", succ);
+
+	if (succ)
+	{
+		Model<3> model = Model<3>::FromString(s);
+		std::cin.get();
+	}
+	else
+	{
+		std::cout << "File did not open." << std::endl;
+	}
+	return;
+}
+
 int main()
 {
+	test_obj_ldr();
+	return 0;
+
 	// TODO: instantiate logger
 	// TODO: instantiate config reader
 
