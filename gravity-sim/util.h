@@ -16,6 +16,8 @@ private:
 	bool m_success;
 	cl_int m_cl_err;
 
+	CL_Components(CL_Components &rhs) {};
+
 public:
 	cl_platform_id platform;
 	cl_device_id device;

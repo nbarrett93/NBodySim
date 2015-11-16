@@ -9,44 +9,19 @@ GLfloat dummy_positions[2 * 4] =
 
 ParticleSystem::~ParticleSystem()
 {
-	glDeleteBuffers(3, m_gl_id);
-
-	glDeleteBuffers(1, &m_sphere_i);
-	glDeleteBuffers(1, &m_sphere_v);
-	glDeleteBuffers(1, &m_sphere_n);
-	glDeleteBuffers(1, &m_gl_color);
-}
-
-ParticleSystem::ParticleSystem(const CL_Components &comps, ParticleSystemConfig cfg) :
-	m_cur(1),
-	m_CL(comps),
-	m_cam(cfg.FoV, cfg.AspectRatio),
-	m_delta1(0.033f),
-	m_delta2(0.033f),
-	m_num_particles(2)
-{
-	glGenBuffers(3, m_gl_id);
-	glGenVertexArrays(1, &m_sphere_v);
-	glGenBuffers(1, &m_sphere_i);
-	glGenBuffers(1, &m_sphere_n);
-	glGenBuffers(1, &m_gl_color);
+	
 }
 
 ParticleSystem::ParticleSystem(CL_Components &&comps, ParticleSystemConfig cfg) :
 	m_cur(1),
-	m_CL(comps),
+	m_CL(std::move(comps)),
 	m_cam(cfg.FoV, cfg.AspectRatio),
 	m_delta1(0.033f),
 	m_delta2(0.033f),
-	m_num_particles(2)
+	m_num_particles(2),
+	m_sphere_model(Model<3>::FromString(cfg.SphereObjContents))
 {
-	glGenBuffers(3, m_gl_id);
-	glGenBuffers(1, &m_sphere_i);
-	glGenBuffers(1, &m_sphere_v);
-	glGenBuffers(1, &m_sphere_n);
-	glGenBuffers(1, &m_gl_color);
-
-	dummy_setup();
+	m_sphere_vao = m_sphere_model.MakeVAO();
 }
 
 uint8_t ParticleSystem::prv_() const
@@ -145,6 +120,7 @@ void ParticleSystem::draw()
 	glFinish();
 }
 
+// This needs to be extracted into a class
 void ParticleSystem::dummy_setup()
 {
 	/***************** Offsets ******************/
@@ -155,14 +131,14 @@ void ParticleSystem::dummy_setup()
 		-1.0, 0.0, 0.0, 0.0,    0.0, 0.0, 1.0, 1.0
 	};
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_gl_id[1]);
+	//glBindBuffer(GL_ARRAY_BUFFER, m_gl_id[1]);
 	glBufferData(GL_ARRAY_BUFFER, 16 * sizeof(GLfloat), dummy_data, GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_gl_id[1]);
+	//glBindBuffer(GL_ARRAY_BUFFER, m_gl_id[1]);
 	// offset & stride for the positions
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), 0);
 	// offset & stride for the colors
@@ -174,11 +150,11 @@ void ParticleSystem::dummy_setup()
 
 	auto sphere = Model<4>::FromCStr("Hello!");
 
-	glBindVertexArray(m_sphere_v);
+	//glBindVertexArray(m_sphere_v);
 	//glBufferData(GL_ARRAY_BUFFER, m_sphere_vert_sz, m_sphere_vertices, GL_STATIC_DRAW);
 	glBindVertexArray(0);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_sphere_i);
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_sphere_i);
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_sphere_num_indices * sizeof(unsigned short), m_sphere_indices, GL_STATIC_DRAW);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }

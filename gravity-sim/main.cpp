@@ -1,8 +1,10 @@
-#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
+//#pragma comment(linker, "/SUBSYSTEM:windows")
+#pragma comment(linker, "/ENTRY:mainCRTStartup")
 
 #include <iostream>
 #include <vector>
 #include <cstdint>
+#include <fstream>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <CL/opencl.h>
@@ -11,6 +13,8 @@
 
 #include "util.h"
 #include "particle.h"
+
+#include "ObjLoader.hpp"
 
 static void error_callback(int error, const char* description)
 {
@@ -91,10 +95,18 @@ static void run_main_loop(CL_Components &&cl_state, GLFWwindow *window)
 	// TODO: take these from config
 	const float FieldOfView = 3.14159265359f / 3.0f,
 		AspectRatio = 4.0f / 3.0f;
+	bool succ = false;
 
 	ParticleSystem system(
-		cl_state,
-		{ FieldOfView, AspectRatio });
+		std::move(cl_state),
+		{ FieldOfView, AspectRatio, read_file(".\\resources\\models\\sphere.obj", succ) }
+	);
+
+	if (!succ)
+	{
+		// TODO: log error in reading sphere model
+		return;
+	}
 
 	glfwSwapInterval(1);
 
@@ -106,7 +118,7 @@ static void run_main_loop(CL_Components &&cl_state, GLFWwindow *window)
 	bool first = true;
 	glfwSetTime(0.0);
 
-	while (!glfwWindowShouldClose(window))
+	while (!glfwWindowShouldClose(window) && system.good())
 	{
 		dt = first ? dt : glfwGetTime();
 		first = false;
@@ -114,7 +126,7 @@ static void run_main_loop(CL_Components &&cl_state, GLFWwindow *window)
 
 		system.delta(dt);
 		/*
-		Removed for dev of GL system since CL depends upon it
+		Removed for dev of GL system since CL depends upon GL
 		*/
 		//system.run_CL();
 

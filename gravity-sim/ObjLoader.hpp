@@ -7,27 +7,29 @@
 #include <vector>
 #include <sstream>
 #include <limits>
+#include <utility>
+#include <map>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
+#include <GL/glew.h>
 
 template <size_t T>
-class Face
+struct Face
 {
-	uint16_t v[T];
-	uint16_t vt[T];
-	uint16_t vn[T];
+	// index of each vertex
+	uint16_t Vertices[T];
 };
 
-template <size_t T = 4>
-class Model
+template <size_t T = 3>
+struct Model
 {
-public:
-	std::vector<glm::vec4> GeomVerts;
-	std::vector<glm::vec3> TexCoords;
-	std::vector<glm::vec3> Normals;
-	std::vector<glm::vec3> ParameterVerts;
 	std::vector< Face<T> > Faces;
+	std::vector<glm::vec4> Vertices;
+	std::vector<glm::vec3> Normals;
+	std::vector<glm::vec3> TexCoords;
+
+	GLuint MakeVAO();
 
 	static Model<T> FromStream(std::istream &s);
 	static Model<T> FromString(const std::string &s);
@@ -35,13 +37,55 @@ public:
 };
 
 template <size_t T>
+GLuint Model<T>::MakeVAO()
+{
+	GLuint vao;
+	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
+
+	// vertices, normals, indices
+	GLuint vbo[3];
+	glGenBuffers(3, vbo);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+	//glBufferData(GL_ARRAY_BUFFER, GeomVerts.size() * sizeof(GeomVerts[0]), &GeomVerts[0], GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+	//glBufferData(GL_ARRAY_BUFFER, Normals.size() * sizeof(Normals[0]), &Normals[0], GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2]);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, )
+
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+
+	glBindVertexArray(0);
+
+	return vao;
+}
+
+template <size_t T>
+struct Face_
+{
+	uint16_t v[T];
+	uint16_t vt[T];
+	uint16_t vn[T];
+};
+
+template <size_t T = 3>
 Model<T> Model<T>::FromStream(std::istream &s)
 {
-	Model<T> ret;
+	std::vector<glm::vec4> GeomVerts;
+	std::vector<glm::vec3> TexCoords;
+	std::vector<glm::vec3> Normals;
+	std::vector<glm::vec3> ParameterVerts;
+	std::vector< Face_<T> > Faces;
+
 	std::string buf;
 	float tmp[4];
 
-	while (!s.eof())
+	// Parsing code
+	while (!s.eof() && s.good())
 	{
 		tmp[0] = 0.0f; tmp[1] = 0.0f; tmp[2] = 0.0f;
 		switch (s.get())
@@ -70,7 +114,7 @@ Model<T> Model<T>::FromStream(std::istream &s)
 					s >> tmp[3];
 					s.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 				}
-				ret.GeomVerts.push_back(glm::vec4(tmp[0], tmp[1], tmp[2], tmp[3]));
+				GeomVerts.emplace_back(glm::vec4(tmp[0], tmp[1], tmp[2], tmp[3]));
 				break;
 			case 't':
 				// texture coord follows
@@ -87,7 +131,7 @@ Model<T> Model<T>::FromStream(std::istream &s)
 					s >> tmp[2];
 					s.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 				}
-				ret.TexCoords.push_back(glm::vec3(tmp[0], tmp[1], tmp[2]));
+				TexCoords.emplace_back(glm::vec3(tmp[0], tmp[1], tmp[2]));
 				break;
 			case 'n':
 				// normal coord follows
@@ -95,7 +139,7 @@ Model<T> Model<T>::FromStream(std::istream &s)
 				s >> tmp[1];
 				s >> tmp[2];
 				s.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-				ret.Normals.push_back(glm::vec3(tmp[0], tmp[1], tmp[2]));
+				Normals.emplace_back(glm::vec3(tmp[0], tmp[1], tmp[2]));
 				break;
 			case 'p':
 				// parameter coord follows
@@ -122,7 +166,7 @@ Model<T> Model<T>::FromStream(std::istream &s)
 						s.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 					}
 				}
-				ret.ParameterVerts.push_back(glm::vec3(tmp[0], tmp[1], tmp[2]));
+				ParameterVerts.emplace_back(glm::vec3(tmp[0], tmp[1], tmp[2]));
 				break;
 			default:
 				s.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -132,7 +176,7 @@ Model<T> Model<T>::FromStream(std::istream &s)
 			break;
 		case 'f':
 			// face follows
-			Face<T> face;
+			Face_<T> face;
 			while (s.peek() == ' ')
 				s.ignore(1);
 			if (s.peek() == '\r' || s.peek() == '\n')
@@ -150,7 +194,42 @@ Model<T> Model<T>::FromStream(std::istream &s)
 					break;
 				}
 				// should have a form like: m OR m/n OR m/n/p OR m//p
+				std::string tmp_str;
+				while (s.peek() != ' ' && s.peek() != '\r' && s.peek() != '\n')
+					tmp_str += s.get();
+				const char *tmp_str_ = tmp_str.c_str();
+				char *endptr = NULL;
+
+				face.v[i] = (uint16_t)strtol(tmp_str_, &endptr, 10) - 1;
+				if (*endptr != '\0')
+				{
+					// skip the slash
+					++endptr;
+					if (*endptr == '/')
+					{
+						// we had a double slash -> v//vn
+						++endptr;
+						face.vn[i] = (uint16_t)strtol(endptr, NULL, 10) - 1;
+					}
+					else
+					{
+						// we have at least m/n
+						face.vt[i] = (uint16_t)strtol(endptr, &endptr, 10) - 1;
+						if (*endptr == '/')
+						{
+							// we have m/n/p
+							++endptr;
+							face.vn[i] = (uint16_t)strtol(endptr, NULL, 10) - 1;
+						}
+					}
+				}
 			}
+			if (s.peek() == '\r' || s.peek() == '\n')
+			{
+				s.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+				break;
+			}
+			Faces.emplace_back(std::move(face));
 			break;
 		default:
 			s.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -158,10 +237,96 @@ Model<T> Model<T>::FromStream(std::istream &s)
 		}
 	}
 
+	Model<T> ret;
+
+	// vertex index in old array
+	typedef uint16_t KeyType;
+	// Old arrays: normal, texture indices
+	// New array index
+	typedef std::tuple<uint16_t, uint16_t, uint16_t> ValType;
+
+	std::multimap<KeyType, ValType> cache;
+
+	uint16_t ix = 0;
+	// foreach (Face f : Faces)
+	for (Face_<T> &face : Faces)
+	{
+		Face<T> f;
+		
+		// foreach (Vert v : f)
+		for (uint32_t j = 0; j < T; ++j)
+		{
+			auto pos_i = face.v[j];
+			auto norm_i = face.vn[j];
+			auto tex_i = face.vt[j];
+
+			auto it_pair = cache.equal_range(pos_i);
+			if (std::get<0>(it_pair) == cache.end())
+			{
+				// it's a new vertex
+				f.Vertices[j] = ix;
+				ret.Vertices.push_back(GeomVerts[pos_i]);
+				ret.Normals.push_back(Normals[norm_i]);
+				ret.TexCoords.push_back(TexCoords[tex_i]);
+
+				cache.insert(std::make_pair(
+					face.v[j],
+					std::make_tuple(norm_i, tex_i, ix)
+					)
+				);
+
+				++ix;
+			}
+			else
+			{
+				bool found_it = false;
+				uint16_t index = 0;
+				// it might be a re-usable vertex
+				// we have to check all vertices in the cache that have this index
+				for (auto x = it_pair.first;
+					x != it_pair.second && !found_it;
+					++x)
+				{
+					ValType &snd = std::get<1>(*x);
+					if (std::get<0>(snd) == norm_i && std::get<1>(snd) == tex_i)
+					{
+						// it's a match
+						// use the existing index
+						found_it = true;
+						index = std::get<2>(snd);
+					}
+				}
+
+				if (found_it)
+				{
+					f.Vertices[j] = index;
+				}
+				else
+				{
+					// we have to create a new index
+					f.Vertices[j] = ix;
+					ret.Vertices.push_back(GeomVerts[pos_i]);
+					ret.Normals.push_back(Normals[norm_i]);
+					ret.TexCoords.push_back(TexCoords[tex_i]);
+
+					cache.insert(std::make_pair(
+						face.v[j],
+						std::make_tuple(norm_i, tex_i, ix)
+						)
+					);
+
+					++ix;
+				}
+			}
+		}
+
+		ret.Faces.push_back(f);
+	}
+
 	return ret;
 }
 
-template <size_t T>
+template <size_t T = 3>
 Model<T> Model<T>::FromString(const std::string &s)
 {
 	std::stringstream ss;
@@ -169,7 +334,7 @@ Model<T> Model<T>::FromString(const std::string &s)
 	return Model<T>::FromStream(ss);
 }
 
-template <size_t T>
+template <size_t T = 3>
 Model<T> Model<T>::FromCStr(const char *s)
 {
 	std::string stl_str(s);

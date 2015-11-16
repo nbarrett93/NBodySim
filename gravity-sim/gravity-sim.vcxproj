@@ -177,13 +177,13 @@
       <AdditionalLibraryDirectories>$(INTELOCLSDKROOT)lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>OpenCL.lib;glfw3.lib;opengl32.lib;glew32.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
     </Link>
     <PostBuildEvent>
-      <Command>If exist "*.cl" copy "*.cl" "$(OutDir)\"
-If exist "glew32.dll" copy "glew32.dll" "$(OutDir)\"
-If exist "*.frag" copy "*.frag" "$(OutDir)\"
-If exist "*.vert" copy "*.vert" "$(OutDir)\"</Command>
+      <Command>If exist "*.cl" copy "*.cl" "$(ProjectDir)\resources\kernels"
+If exist "glew32.dll" copy "glew32.dll" "$(ProjectDir)\"
+If exist "*.frag" copy "*.frag" "$(ProjectDir)\resources\shaders"
+If exist "*.vert" copy "*.vert" "$(ProjectDir)\resources\shaders"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

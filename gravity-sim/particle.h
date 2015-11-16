@@ -7,26 +7,21 @@
 
 #include "util.h"
 #include "camera.h"
+#include "ObjLoader.hpp"
 
 struct ParticleSystemConfig
 {
 	float FoV;
 	float AspectRatio;
+	std::string SphereObjContents;
 	// TODO: more fields for shader files, kernel files, model, etc
 };
 
 class ParticleSystem
 {
 private:
-	// buffer IDs for cur, prev, & next positions (GL & CL)
-	GLuint m_gl_id[3];
+	// buffer IDs for cur, prev, & next positions (CL)
 	cl_mem m_cl_buffs[3];
-	// buffer IDs for sphere vertices, normals, & indices (GL only)
-	GLuint m_sphere_v,
-		m_sphere_i,
-		m_sphere_n;
-	// buffer IDs for color vec (GL & CL)
-	GLuint m_gl_color;
 	cl_mem m_cl_color;
 
 	// current position buffer index
@@ -39,6 +34,9 @@ private:
 	CL_Components m_CL;
 	Camera m_cam;
 
+	Model<3> m_sphere_model;
+	GLuint m_sphere_vao;
+
 	// cam config doesn't matter here; we won't be using this
 	ParticleSystem(const ParticleSystem&) : m_cam(0.1f, 4.0f / 3.0f)
 	{};
@@ -50,7 +48,6 @@ private:
 	void dummy_setup();
 
 public:
-	ParticleSystem(const CL_Components &comps, ParticleSystemConfig cfg);
 	ParticleSystem(CL_Components &&comps, ParticleSystemConfig cfg);
 	~ParticleSystem();
 
@@ -60,6 +57,7 @@ public:
 	void run_CL();
 	void draw();
 	void delta(float dt);
+	bool good() const { return true; };
 };
 
 #endif
