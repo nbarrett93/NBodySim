@@ -48,6 +48,12 @@
     <None Include="resources\shaders\vert_shader.vert">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="resources\shaders\test_shd.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="resources\shaders\test_shd.vert">
+      <Filter>Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="util.h">

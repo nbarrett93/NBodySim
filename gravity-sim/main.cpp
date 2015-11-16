@@ -1,4 +1,4 @@
-//#pragma comment(linker, "/SUBSYSTEM:windows")
+#pragma comment(linker, "/SUBSYSTEM:windows")
 #pragma comment(linker, "/ENTRY:mainCRTStartup")
 
 #include <iostream>
@@ -24,28 +24,8 @@ static void error_callback(int error, const char* description)
 
 static void run_main_loop(CL_Components &&cl_state, GLFWwindow *window);
 
-static void test_obj_ldr()
-{
-	bool succ = false;
-	std::string s = read_file("resources/models/sphere.obj", succ);
-
-	if (succ)
-	{
-		Model<3> model = Model<3>::FromString(s);
-		std::cin.get();
-	}
-	else
-	{
-		std::cout << "File did not open." << std::endl;
-	}
-	return;
-}
-
 int main()
 {
-	test_obj_ldr();
-	return 0;
-
 	// TODO: instantiate logger
 	// TODO: instantiate config reader
 
@@ -97,9 +77,12 @@ int main()
 
 	run_main_loop(std::move(cl_state), window);
 
+	std::cin.get();
+
 	glfwDestroyWindow(window);
 
 	glfwTerminate();
+
 	return 0;
 }
 
@@ -117,14 +100,38 @@ static void run_main_loop(CL_Components &&cl_state, GLFWwindow *window)
 		AspectRatio = 4.0f / 3.0f;
 	bool succ = false;
 
-	ParticleSystem system(
-		std::move(cl_state),
-		{ FieldOfView, AspectRatio, read_file(".\\resources\\models\\sphere.obj", succ) }
-	);
-
+	ParticleSystemConfig cfg;
+	cfg.FoV = FieldOfView;
+	cfg.AspectRatio = AspectRatio;
+	cfg.SphereObjContents = read_file(".\\resources\\models\\sphere.obj", succ);
 	if (!succ)
 	{
 		// TODO: log error in reading sphere model
+		return;
+	}
+	cfg.VertShader = read_file(".\\resources\\shaders\\test_shd.vert", succ);
+	if (!succ)
+	{
+		// TODO: log error in reading vertex shader
+		return;
+	}
+	cfg.FragShader = read_file(".\\resources\\shaders\\test_shd.frag", succ);
+	if (!succ)
+	{
+		// TODO: log error in reading fragment shader
+		return;
+	}
+
+	ParticleSystem system(
+		std::move(cl_state),
+		cfg
+	);
+
+	if (!system.good())
+	{
+		std::cout << "Error initializing system." << std::endl;
+		std::cout << system.err_log() << std::endl;
+		std::cin.get();
 		return;
 	}
 
@@ -132,7 +139,7 @@ static void run_main_loop(CL_Components &&cl_state, GLFWwindow *window)
 
 	glfwSetKeyCallback(window, key_callback);
 
-	glClearColor(0, 0, 0, 0);
+	glClearColor(0, 0, 0.25, 0);
 
 	float dt = 0.033f;
 	bool first = true;
@@ -144,7 +151,7 @@ static void run_main_loop(CL_Components &&cl_state, GLFWwindow *window)
 		first = false;
 		glfwSetTime(0.0);
 
-		system.delta(dt);
+		//system.delta(dt);
 		/*
 		Removed for dev of GL system since CL depends upon GL
 		*/

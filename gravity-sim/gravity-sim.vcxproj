@@ -193,6 +193,8 @@
   <ItemGroup>
     <None Include="glew32.dll" />
     <None Include="resources\shaders\frag_shader.frag" />
+    <None Include="resources\shaders\test_shd.frag" />
+    <None Include="resources\shaders\test_shd.vert" />
     <None Include="resources\shaders\vert_shader.vert" />
   </ItemGroup>
   <ItemGroup>

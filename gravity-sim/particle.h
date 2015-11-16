@@ -14,6 +14,8 @@ struct ParticleSystemConfig
 	float FoV;
 	float AspectRatio;
 	std::string SphereObjContents;
+	std::string FragShader;
+	std::string VertShader;
 	// TODO: more fields for shader files, kernel files, model, etc
 };
 
@@ -24,6 +26,12 @@ private:
 	cl_mem m_cl_buffs[3];
 	cl_mem m_cl_color;
 
+	GLuint m_vert_shader,
+		m_frag_shader,
+		m_shader_program;
+
+	GLint m_mvp_loc;
+
 	// current position buffer index
 	uint8_t m_cur;
 	uint32_t m_num_particles;
@@ -33,6 +41,8 @@ private:
 
 	CL_Components m_CL;
 	Camera m_cam;
+	ParticleSystemConfig m_cfg;
+	std::string m_error_str;
 
 	Model<3> m_sphere_model;
 	GLuint m_sphere_vao;
@@ -45,7 +55,7 @@ private:
 	uint8_t nxt_() const;
 	uint8_t cur_() const;
 
-	void dummy_setup();
+	bool m_error;
 
 public:
 	ParticleSystem(CL_Components &&comps, ParticleSystemConfig cfg);
@@ -57,7 +67,11 @@ public:
 	void run_CL();
 	void draw();
 	void delta(float dt);
-	bool good() const { return true; };
+	bool good() const { return !m_error; };
+	std::string err_log() const
+	{
+		return m_error_str;
+	};
 };
 
 #endif

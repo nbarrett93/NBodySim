@@ -24,12 +24,28 @@ struct Face
 template <size_t T = 3>
 struct Model
 {
-	std::vector< Face<T> > Faces;
+private:
+	Model(const Model<T>&) {};
+public:
+	std::vector<uint16_t> Indices;
 	std::vector<glm::vec4> Vertices;
 	std::vector<glm::vec3> Normals;
 	std::vector<glm::vec3> TexCoords;
 
+	// Vertices, Normals, Indices
+	GLuint Buffers[3];
+	GLuint VAO;
+
 	GLuint MakeVAO();
+	void OwnBuffers();
+
+	Model() :
+		VAO(0)
+	{
+		memset(Buffers, 0, 3 * sizeof(GLuint));
+	};
+	Model(Model &&rhs);
+	~Model();
 
 	static Model<T> FromStream(std::istream &s);
 	static Model<T> FromString(const std::string &s);
@@ -42,26 +58,60 @@ GLuint Model<T>::MakeVAO()
 	GLuint vao;
 	glGenVertexArrays(1, &vao);
 	glBindVertexArray(vao);
+	VAO = vao;
 
 	// vertices, normals, indices
 	GLuint vbo[3];
 	glGenBuffers(3, vbo);
 
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	//glBufferData(GL_ARRAY_BUFFER, GeomVerts.size() * sizeof(GeomVerts[0]), &GeomVerts[0], GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-	//glBufferData(GL_ARRAY_BUFFER, Normals.size() * sizeof(Normals[0]), &Normals[0], GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2]);
-	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, )
+	memcpy(Buffers, vbo, 3 * sizeof(GLuint));
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+	glBufferData(GL_ARRAY_BUFFER, Vertices.size() * sizeof(Vertices[0]), &Vertices[0], GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Vertices[0]), (const GLvoid*)0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+	glBufferData(GL_ARRAY_BUFFER, Normals.size() * sizeof(Normals[0]), &Normals[0], GL_STATIC_DRAW);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Normals[0]), (const GLvoid*)0);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2]);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, Indices.size() * sizeof(Indices[0]), &Indices[0], GL_STATIC_DRAW);
+
 	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	return vao;
+}
+
+template <size_t T>
+Model<T>::~Model()
+{
+	glDeleteBuffers(3, Buffers);
+	glDeleteVertexArrays(1, &VAO);
+}
+
+template <size_t T>
+Model<T>::Model(Model<T> &&rhs) :
+	VAO(rhs.VAO),
+	Indices(std::move(rhs.Indices)),
+	Vertices(std::move(rhs.Vertices)),
+	Normals(std::move(rhs.Normals)),
+	TexCoords(std::move(rhs.TexCoords))
+{
+	memcpy(Buffers, rhs.Buffers, 3 * sizeof(GLuint));
+
+	rhs.OwnBuffers();
+}
+
+template <size_t T>
+void Model<T>::OwnBuffers()
+{
+	memset(Buffers, 0, 3 * sizeof(GLuint));
+	VAO = 0;
 }
 
 template <size_t T>
@@ -256,8 +306,6 @@ Model<T> Model<T>::FromStream(std::istream &s)
 	for (uint32_t i = 0; i < Faces.size(); ++i)
 	{
 		Face_<T> &face = Faces[i];
-
-		Face<T> f;
 		
 		// foreach (Vert v : f)
 		for (uint32_t j = 0; j < T; ++j)
@@ -270,7 +318,7 @@ Model<T> Model<T>::FromStream(std::istream &s)
 			if (std::get<0>(it_pair) == cache.end())
 			{
 				// it's a new vertex
-				f.Vertices[j] = ix;
+				ret.Indices.push_back(ix);
 				if (have_verts)
 					ret.Vertices.push_back(GeomVerts[pos_i]);
 				if (have_norm)
@@ -308,12 +356,12 @@ Model<T> Model<T>::FromStream(std::istream &s)
 
 				if (found_it)
 				{
-					f.Vertices[j] = index;
+					ret.Indices.push_back(index);
 				}
 				else
 				{
 					// we have to create a new index
-					f.Vertices[j] = ix;
+					ret.Indices.push_back(ix);
 					if (have_verts)
 						ret.Vertices.push_back(GeomVerts[pos_i]);
 					if (have_norm)
@@ -331,8 +379,6 @@ Model<T> Model<T>::FromStream(std::istream &s)
 				}
 			}
 		}
-
-		ret.Faces.push_back(f);
 	}
 
 	return ret;
