@@ -97,6 +97,8 @@ int main()
 
 	glfwTerminate();
 
+	//std::cin.get();
+
 	return 0;
 }
 
@@ -176,6 +178,11 @@ static void run_main_loop(CL_Components &&cl_state, GLFWwindow *window)
 		// TODO: log error in reading fragment shader
 		return;
 	}
+	cfg.KernelSource = read_file(".\\resources\\kernels\\dumb_kernel.cl", succ);
+	if (!succ)
+	{
+		return;
+	}
 
 	// dummy values for testing
 	cfg.NumParticles = 3;
@@ -183,7 +190,7 @@ static void run_main_loop(CL_Components &&cl_state, GLFWwindow *window)
 	cfg.ParticleMasses = dummy_masses;
 
 	ParticleSystem system(
-		std::move(cl_state),
+		cl_state,
 		cfg
 	);
 
@@ -197,7 +204,7 @@ static void run_main_loop(CL_Components &&cl_state, GLFWwindow *window)
 		return;
 	}
 
-	glfwSwapInterval(1);
+	//glfwSwapInterval(1);
 
 	glfwSetWindowUserPointer(window, (void*)&system);
 
@@ -219,11 +226,19 @@ static void run_main_loop(CL_Components &&cl_state, GLFWwindow *window)
 
 		system.update(dt);
 
+		if (!system.good())
+		{
+			std::cout << "Error in update(): " << std::endl << system.err_log() << std::endl;
+			glfwSetWindowShouldClose(window, GL_TRUE);
+		}
+
 		system.draw();
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
+
+	//std::cin.get();
 
 	glfwSetWindowUserPointer(window, NULL);
 }

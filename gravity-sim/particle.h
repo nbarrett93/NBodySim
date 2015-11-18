@@ -22,6 +22,7 @@ struct ParticleSystemConfig
 	uint32_t NumParticles;
 	GLfloat *ParticlePositions;
 	GLfloat *ParticleMasses;
+	std::string KernelSource;
 	// TODO implement this...
 	//GLfloat *ParticleVelocities;
 	std::string ModelObjContents;
@@ -35,6 +36,9 @@ private:
 	// buffer IDs for cur, prev, & next positions (CL)
 	cl_mem m_cl_buffs[3];
 	cl_mem m_cl_mass;
+	cl_mem m_cl_time;
+	cl_program m_cl_program;
+	cl_kernel m_cl_kernel;
 
 	// current position buffer index
 	uint8_t m_cur;
@@ -49,6 +53,7 @@ private:
 
 	// timestep deltas for current and previous frame
 	float m_delta1, m_delta2;
+	float m_total;
 
 	CL_Components m_CL;
 	ParticleSystemConfig m_cfg;
@@ -69,7 +74,7 @@ private:
 	ParticleSystem(const ParticleSystem& cfg) : m_cam(cfg.m_cfg)
 	{};
 public:
-	ParticleSystem(CL_Components &&comps, ParticleSystemConfig cfg);
+	ParticleSystem(CL_Components &comps, ParticleSystemConfig cfg);
 	~ParticleSystem();
 
 	void Init();

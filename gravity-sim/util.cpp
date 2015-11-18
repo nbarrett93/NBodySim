@@ -111,7 +111,7 @@ CL_Components& CL_Components::setCtx(HGLRC ctx, HDC dc)
 
 	if (m_cl_err == CL_SUCCESS)
 	{
-		cl_command_queue queue = clCreateCommandQueue(cl_ctx, device, NULL, &m_cl_err);
+		cl_command_queue queue_ = clCreateCommandQueue(cl_ctx, device, NULL, &m_cl_err);
 
 		if (m_cl_err != CL_SUCCESS)
 		{
@@ -120,7 +120,7 @@ CL_Components& CL_Components::setCtx(HGLRC ctx, HDC dc)
 			return *this;
 		}
 
-		queue = queue;
+		queue = queue_;
 		context = cl_ctx;
 		m_success = true;
 	}
@@ -128,7 +128,7 @@ CL_Components& CL_Components::setCtx(HGLRC ctx, HDC dc)
 	return *this;
 }
 
-CL_Components::CL_Components(CL_Components &&rhs) :
+/*CL_Components::CL_Components(CL_Components &&rhs) :
 	m_success(rhs.m_success),
 	m_cl_err(rhs.m_cl_err),
 	platform(rhs.platform),
@@ -140,7 +140,7 @@ CL_Components::CL_Components(CL_Components &&rhs) :
 	rhs.device = 0;
 	rhs.context = 0;
 	rhs.queue = 0;
-}
+}*/
 
 void CL_Components::dispose()
 {

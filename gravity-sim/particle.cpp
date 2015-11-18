@@ -8,6 +8,12 @@
 
 ParticleSystem::~ParticleSystem()
 {
+	// TODO BAD!!!
+	return;
+
+	if (m_cl_program)
+		clReleaseProgram(m_cl_program);
+
 	for (uint32_t i = 0; i < m_cfg.NumParticles; ++i)
 		if (m_cl_buffs[i])
 			clReleaseMemObject(m_cl_buffs[i]);
@@ -20,9 +26,9 @@ ParticleSystem::~ParticleSystem()
 	glDeleteBuffers(3, m_pos_instances);
 }
 
-ParticleSystem::ParticleSystem(CL_Components &&comps, ParticleSystemConfig cfg) :
+ParticleSystem::ParticleSystem(CL_Components &comps, ParticleSystemConfig cfg) :
 	m_cur(1),
-	m_CL(std::move(comps)),
+	m_CL(comps),
 	m_cam(cfg),
 	m_delta1(0.033f),
 	m_delta2(0.033f),
@@ -30,7 +36,8 @@ ParticleSystem::ParticleSystem(CL_Components &&comps, ParticleSystemConfig cfg) 
 	m_error(false),
 	m_cfg(cfg),
 	m_light_pos(0.0, 100.0, 0.0, 0.0),
-	m_cl_mass(0)
+	m_cl_mass(0),
+	m_total(0.0)
 {
 	for (uint32_t i = 0; i < m_cfg.NumParticles; ++i)
 		m_cl_buffs[i] = 0;
@@ -45,7 +52,7 @@ void ParticleSystem::Init()
 	glGenBuffers(m_cfg.NumParticles, m_pos_instances);
 	glBindBuffer(GL_ARRAY_BUFFER, m_pos_instances[0]);
 
-	glBufferData(GL_ARRAY_BUFFER, m_cfg.NumParticles * 4 * sizeof(GLfloat), m_cfg.ParticlePositions, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, m_cfg.NumParticles * 4 * sizeof(GLfloat), m_cfg.ParticlePositions, GL_DYNAMIC_DRAW);
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0);
 	glVertexAttribDivisor(2, 1);
@@ -89,6 +96,14 @@ void ParticleSystem::Init()
 		return;
 	}
 
+	m_cl_time = clCreateBuffer(m_CL.context, CL_MEM_READ_ONLY | CL_MEM_HOST_WRITE_ONLY, sizeof(GLfloat), NULL, &clErr);
+	if (clErr)
+	{
+		m_error = true;
+		m_error_str = "Unable to create buffer [Time]";
+		return;
+	}
+
 	// not using mass for testing the system
 	/*m_cl_mass = clCreateBuffer(m_CL.context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 
 		m_cfg.NumParticles * sizeof(GLfloat), m_cfg.ParticleMasses, &clErr);
@@ -101,7 +116,30 @@ void ParticleSystem::Init()
 
 	// get the OpenCL kernel
 	// a test kernel for now
+	const char *str = m_cfg.KernelSource.c_str();
+	m_cl_program = clCreateProgramWithSource(m_CL.context, 1, &str, NULL, &clErr);
+	if (clErr)
+	{
+		m_error = true;
+		m_error_str = "Unable to load kernel.";
+		return;
+	}
 
+	clErr = clBuildProgram(m_cl_program, 1, &m_CL.device, NULL, NULL, NULL);
+	if (CL_SUCCESS != clErr)
+	{
+		m_error = true;
+		m_error_str = "Unable to build kernel.";
+		return;
+	}
+
+	m_cl_kernel = clCreateKernel(m_cl_program, "calc_next", &clErr);
+	if (CL_SUCCESS != clErr)
+	{
+		m_error = true;
+		m_error_str = "Unable to instantiate kernel.";
+		return;
+	}
 }
 
 uint8_t ParticleSystem::prv_() const
@@ -138,19 +176,22 @@ void ParticleSystem::update(float dt)
 	m_delta2 = m_delta1;
 	m_delta1 = dt;
 
-	m_cam.Update();
+	m_total += dt;
 
-	//return;
+	m_cam.Update();
 
 	cl_int cl_ret;
 	cl_event cl_ev[2];
 
 	/************************ acquire buffers *************************************/
+
 	//cl_ret = clEnqueueAcquireGLObjects(m_CL.queue, 3, m_cl_buffs, 0, NULL, &cl_ev[0]);
-	cl_ret = clEnqueueAcquireGLObjects(m_CL.queue, 1, &m_cl_buffs[0], 0, NULL, &cl_ev[0]);
+	cl_ret = clEnqueueAcquireGLObjects(m_CL.queue, 1, &m_cl_buffs[0], 0, NULL, cl_ev);
 	if (cl_ret != CL_SUCCESS)
 	{
 		// uh-oh. TODO
+		m_error = true;
+		m_error_str = "Error acquiring GL object";
 		return;
 	}
 
@@ -160,18 +201,53 @@ void ParticleSystem::update(float dt)
 		// uh-oh. TODO
 	//}
 	//clWaitForEvents(2, cl_ev);
-	clWaitForEvents(1, cl_ev);
+
+	clEnqueueWriteBuffer(m_CL.queue, m_cl_time, CL_FALSE, 0, 4, &m_total, NULL, NULL, &cl_ev[1]);
+
+	clWaitForEvents(2, cl_ev);
+	clReleaseEvent(cl_ev[0]);
+	clReleaseEvent(cl_ev[1]);
 
 	/************************** run kernel ****************************************/
 
+	cl_ret = clSetKernelArg(m_cl_kernel, 0, sizeof(cl_mem), &m_cl_buffs[0]);
+	if (cl_ret != CL_SUCCESS)
+	{
+		m_error_str = "Error setting argument to kernel";
+		m_error = true;
+	}
+	else
+	{
+		cl_ret = clSetKernelArg(m_cl_kernel, 1, sizeof(cl_mem), &m_cl_time);
+		if (cl_ret != CL_SUCCESS)
+		{
+			m_error_str = "Error setting argument to kernel";
+			m_error = true;
+		}
+		else
+		{
+			size_t work_sz = m_cfg.NumParticles;
+			cl_ret = clEnqueueNDRangeKernel(m_CL.queue, m_cl_kernel, 1, NULL, &work_sz, NULL, 0, NULL, cl_ev);
+			if (cl_ret != CL_SUCCESS)
+			{
+				m_error_str = "Error queueing kernel.";
+				m_error = true;
+			}
+		}
+	}
 
+	clWaitForEvents(1, cl_ev);
+	clReleaseEvent(cl_ev[0]);
 
 	/************************ release buffers *************************************/
+
 	//cl_ret = clEnqueueReleaseGLObjects(m_CL.queue, 3, m_cl_buffs, 0, NULL, &cl_ev[0]);
-	cl_ret = clEnqueueReleaseGLObjects(m_CL.queue, 1, &m_cl_buffs[0], 0, NULL, &cl_ev[0]);
+	cl_ret = clEnqueueReleaseGLObjects(m_CL.queue, 1, &m_cl_buffs[0], 0, NULL, cl_ev);
 	if (cl_ret != CL_SUCCESS)
 	{
 		// uh-oh. TODO
+		m_error = true;
+		m_error_str = "Error releasing GL object";
 		return;
 	}
 
@@ -182,9 +258,10 @@ void ParticleSystem::update(float dt)
 	//}
 	//clWaitForEvents(2, cl_ev);
 	clWaitForEvents(1, cl_ev);
+	clReleaseEvent(cl_ev[0]);
 
 	// possibly superfluous
-	clFinish(m_CL.queue);
+	clFlush(m_CL.queue);
 }
 
 void ParticleSystem::draw()
