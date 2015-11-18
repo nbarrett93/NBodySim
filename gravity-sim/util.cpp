@@ -115,6 +115,7 @@ CL_Components& CL_Components::setCtx(HGLRC ctx, HDC dc)
 
 		if (m_cl_err != CL_SUCCESS)
 		{
+			m_success = false;
 			clReleaseContext(cl_ctx);
 			return *this;
 		}
@@ -139,4 +140,10 @@ CL_Components::CL_Components(CL_Components &&rhs) :
 	rhs.device = 0;
 	rhs.context = 0;
 	rhs.queue = 0;
+}
+
+void CL_Components::dispose()
+{
+	clReleaseCommandQueue(queue);
+	clReleaseContext(context);
 }

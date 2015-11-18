@@ -1,117 +1,107 @@
 #include "particle.h"
 #include "ObjLoader.hpp"
+#include "ShaderLoader.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-
-GLfloat dummy_positions[2 * 4] = 
-{
-	1.0,  0.0, 0.0,
-	-1.0, 0.0, 0.0
-};
+#include <iostream>
 
 ParticleSystem::~ParticleSystem()
 {
-	// should probably do something about this situation...
+	for (uint32_t i = 0; i < m_cfg.NumParticles; ++i)
+		if (m_cl_buffs[i])
+			clReleaseMemObject(m_cl_buffs[i]);
+
+	if (m_cl_mass)
+		clReleaseMemObject(m_cl_mass);
+
+	m_CL.dispose();
+
+	glDeleteBuffers(3, m_pos_instances);
 }
 
 ParticleSystem::ParticleSystem(CL_Components &&comps, ParticleSystemConfig cfg) :
 	m_cur(1),
-	m_CL(std::forward<CL_Components>(comps)),
-	m_cam(cfg.FoV, cfg.AspectRatio),
+	m_CL(std::move(comps)),
+	m_cam(cfg),
 	m_delta1(0.033f),
 	m_delta2(0.033f),
-	m_num_particles(2),
-	m_sphere_model(Model<3>::FromString(cfg.SphereObjContents)),
+	m_model(Model<3>::FromString(cfg.ModelObjContents)),
 	m_error(false),
-	m_cfg(cfg)
+	m_cfg(cfg),
+	m_light_pos(0.0, 100.0, 0.0, 0.0),
+	m_cl_mass(0)
 {
-	m_sphere_vao = m_sphere_model.MakeVAO();
+	for (uint32_t i = 0; i < m_cfg.NumParticles; ++i)
+		m_cl_buffs[i] = 0;
+}
 
-	m_vert_shader = glCreateShader(GL_VERTEX_SHADER);
+void ParticleSystem::Init()
+{
+	m_model.MakeVAO();
 
-	const char* src = cfg.VertShader.c_str();
+	glBindVertexArray(m_model.VAO);
 
-	glShaderSource(m_vert_shader, 1, &src, NULL);
-	glCompileShader(m_vert_shader);
-	GLint succ;
-	glGetShaderiv(m_vert_shader, GL_COMPILE_STATUS, &succ);
+	glGenBuffers(m_cfg.NumParticles, m_pos_instances);
+	glBindBuffer(GL_ARRAY_BUFFER, m_pos_instances[0]);
 
-	if (succ == GL_FALSE)
+	glBufferData(GL_ARRAY_BUFFER, m_cfg.NumParticles * 4 * sizeof(GLfloat), m_cfg.ParticlePositions, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0);
+	glVertexAttribDivisor(2, 1);
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	m_shader.LoadProgram(m_cfg.VertShader, m_cfg.FragShader);
+
+	if (m_shader.Error())
 	{
-		GLint maxLength = 0;
-		glGetShaderiv(m_vert_shader, GL_INFO_LOG_LENGTH, &maxLength);
-
-		// The maxLength includes the NULL character
-		std::vector<GLchar> errorLog(maxLength);
-		glGetShaderInfoLog(m_vert_shader, maxLength, &maxLength, &errorLog[0]);
-
-		m_error_str = std::string(errorLog.begin(), errorLog.end());
-
 		m_error = true;
-		glDeleteShader(m_vert_shader);
+		m_error_str = m_shader.ErrorText;
 		return;
 	}
 
-	m_frag_shader = glCreateShader(GL_FRAGMENT_SHADER);
-	src = cfg.FragShader.c_str();
+	m_mvp_loc = glGetUniformLocation(m_shader.Program, "mvp_matrix");
+	m_view_loc = glGetUniformLocation(m_shader.Program, "v_matrix");
+	m_lightpos_loc = glGetUniformLocation(m_shader.Program, "light_pos_world");
 
-	glShaderSource(m_frag_shader, 1, &src, NULL);
-	glCompileShader(m_frag_shader);
-	glGetShaderiv(m_frag_shader, GL_COMPILE_STATUS, &succ);
+	// get our OpenCL objects
 
-	if (succ == GL_FALSE)
+	cl_int clErr;
+	/*for (uint32_t i = 0; i < m_cfg.NumParticles; ++i)
 	{
-		GLint maxLength = 0;
-		glGetShaderiv(m_vert_shader, GL_INFO_LOG_LENGTH, &maxLength);
+		m_cl_buffs[i] = clCreateFromGLBuffer(m_CL.context, CL_MEM_READ_WRITE, m_pos_instances[i], &clErr);
+		if (clErr)
+		{
+			m_error = true;
+			m_error_str = "Unable to acquire GL buffer";
+			return;
+		}
+	}*/
 
-		// The maxLength includes the NULL character
-		std::vector<GLchar> errorLog(maxLength);
-		glGetShaderInfoLog(m_vert_shader, maxLength, &maxLength, &errorLog[0]);
-
-		m_error_str = std::string(errorLog.begin(), errorLog.end());
-
+	// only using first buffer ATM for testing
+	m_cl_buffs[0] = clCreateFromGLBuffer(m_CL.context, CL_MEM_READ_WRITE, m_pos_instances[0], &clErr);
+	if (clErr)
+	{
 		m_error = true;
-		glDeleteShader(m_frag_shader);
-		glDeleteShader(m_vert_shader);
+		m_error_str = "Unable to acquire GL buffer [Position]";
 		return;
 	}
 
-	m_shader_program = glCreateProgram();
-
-	glAttachShader(m_shader_program, m_vert_shader);
-	glAttachShader(m_shader_program, m_frag_shader);
-
-	glLinkProgram(m_shader_program);
-
-	glGetProgramiv(m_shader_program, GL_LINK_STATUS, &succ);
-	if (succ == GL_FALSE)
+	// not using mass for testing the system
+	/*m_cl_mass = clCreateBuffer(m_CL.context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 
+		m_cfg.NumParticles * sizeof(GLfloat), m_cfg.ParticleMasses, &clErr);
+	if (clErr)
 	{
-		GLint maxLength = 0;
-		glGetProgramiv(m_shader_program, GL_INFO_LOG_LENGTH, &maxLength);
-
-		//The maxLength includes the NULL character
-		std::vector<GLchar> infoLog(maxLength);
-		glGetProgramInfoLog(m_shader_program, maxLength, &maxLength, &infoLog[0]);
-		m_error_str = std::string(infoLog.begin(), infoLog.end());
-
-		glDeleteProgram(m_shader_program);
-
-		glDeleteShader(m_vert_shader);
-		glDeleteShader(m_frag_shader);
-
 		m_error = true;
-		glDeleteProgram(m_shader_program);
+		m_error_str = "Unable to acquire buffer [Mass]";
 		return;
-	}
+	}*/
 
-	m_mvp_loc = glGetUniformLocation(m_shader_program, "mvp_matrix");
-	
-	glDetachShader(m_shader_program, m_vert_shader);
-	glDeleteShader(m_vert_shader);
+	// get the OpenCL kernel
+	// a test kernel for now
 
-	glDetachShader(m_shader_program, m_frag_shader);
-	glDeleteShader(m_frag_shader);
 }
 
 uint8_t ParticleSystem::prv_() const
@@ -143,60 +133,57 @@ uint8_t ParticleSystem::cur_() const
 	return m_cur;
 }
 
-void ParticleSystem::delta(float dt)
+void ParticleSystem::update(float dt)
 {
 	m_delta2 = m_delta1;
 	m_delta1 = dt;
-}
 
-void ParticleSystem::update_cam()
-{
-	// TODO: update camera position dep upon either user input or the CL simulation output
-}
+	m_cam.Update();
 
-void ParticleSystem::run_CL()
-{
+	//return;
+
 	cl_int cl_ret;
 	cl_event cl_ev[2];
 
 	/************************ acquire buffers *************************************/
-	cl_ret = clEnqueueAcquireGLObjects(m_CL.queue, 3, m_cl_buffs, 0, NULL, &cl_ev[0]);
+	//cl_ret = clEnqueueAcquireGLObjects(m_CL.queue, 3, m_cl_buffs, 0, NULL, &cl_ev[0]);
+	cl_ret = clEnqueueAcquireGLObjects(m_CL.queue, 1, &m_cl_buffs[0], 0, NULL, &cl_ev[0]);
 	if (cl_ret != CL_SUCCESS)
 	{
 		// uh-oh. TODO
+		return;
 	}
 
-	cl_ret = clEnqueueAcquireGLObjects(m_CL.queue, 1, &m_cl_color, 0, NULL, &cl_ev[1]);
-	if (cl_ret != CL_SUCCESS)
-	{
+	//cl_ret = clEnqueueAcquireGLObjects(m_CL.queue, 1, &m_cl_color, 0, NULL, &cl_ev[1]);
+	//if (cl_ret != CL_SUCCESS)
+	//{
 		// uh-oh. TODO
-	}
-	clWaitForEvents(2, cl_ev);
+	//}
+	//clWaitForEvents(2, cl_ev);
+	clWaitForEvents(1, cl_ev);
 
 	/************************** run kernel ****************************************/
 
 
 
-	// update cam while the kernel is running
-	update_cam();
-	// and then wait for the kernel (woo task-parallelism)
-
-
 	/************************ release buffers *************************************/
-	cl_ret = clEnqueueReleaseGLObjects(m_CL.queue, 3, m_cl_buffs, 0, NULL, &cl_ev[0]);
+	//cl_ret = clEnqueueReleaseGLObjects(m_CL.queue, 3, m_cl_buffs, 0, NULL, &cl_ev[0]);
+	cl_ret = clEnqueueReleaseGLObjects(m_CL.queue, 1, &m_cl_buffs[0], 0, NULL, &cl_ev[0]);
 	if (cl_ret != CL_SUCCESS)
 	{
 		// uh-oh. TODO
+		return;
 	}
 
-	cl_ret = clEnqueueReleaseGLObjects(m_CL.queue, 1, &m_cl_color, 0, NULL, &cl_ev[1]);
-	if (cl_ret != CL_SUCCESS)
-	{
+	//cl_ret = clEnqueueReleaseGLObjects(m_CL.queue, 1, &m_cl_color, 0, NULL, &cl_ev[1]);
+	//if (cl_ret != CL_SUCCESS)
+	//{
 		// uh-oh. TODO
-	}
-	clWaitForEvents(2, cl_ev);
+	//}
+	//clWaitForEvents(2, cl_ev);
+	clWaitForEvents(1, cl_ev);
 
-	// quite possibly superfluous
+	// possibly superfluous
 	clFinish(m_CL.queue);
 }
 
@@ -204,19 +191,39 @@ void ParticleSystem::draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glUseProgram(m_shader_program);
+	glUseProgram(m_shader.Program);
 
-	glBindVertexArray(m_sphere_vao);
+	glBindVertexArray(m_model.VAO);
 
-	// just fixed camera position for now...
-	glm::mat4 view = glm::lookAt(glm::vec3(0.0f, 0.0f, 8.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	glm::mat4 view_persp = glm::perspective(m_cfg.FoV, m_cfg.AspectRatio, 0.1f, 100.0f) * view;
+	glm::mat4 view = m_cam.View();
+	glm::mat4 view_persp = m_cam.Proj() * view;
 
 	glUniformMatrix4fv(m_mvp_loc, 1, GL_FALSE, glm::value_ptr(view_persp));
+	glUniformMatrix4fv(m_view_loc, 1, GL_FALSE, glm::value_ptr(view));
+	glUniform4fv(m_lightpos_loc, 1, glm::value_ptr(m_light_pos));
 
-	glDrawElements(GL_TRIANGLES, m_sphere_model.Indices.size(), GL_UNSIGNED_SHORT, (void*)0);
+	glDrawElementsInstanced(GL_TRIANGLES, m_model.Indices.size(), GL_UNSIGNED_SHORT, (void*)0, m_cfg.NumParticles);
 
 	glBindVertexArray(0);
 
+	// sync up so that we can run OpenCL
 	glFinish();
+}
+
+void ParticleSystem::HandleMouse(double x, double y)
+{
+	// hard-code in the camera class for now
+	// TODO make this more generic so a menu can be added
+	m_cam.HandleMouse(x, y);
+}
+
+void ParticleSystem::HandleKey(int key, int action)
+{
+	m_cam.HandleKey(key, action);
+}
+
+void ParticleSystem::HandleButton(int button, int action)
+{
+	// same as mouse. TODO
+	m_cam.HandleButton(button, action);
 }

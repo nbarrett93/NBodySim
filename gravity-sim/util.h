@@ -26,15 +26,8 @@ public:
 
 	CL_Components() : platform(0), device(0), context(0), queue(0), m_success(false), m_cl_err(0) { };
 	CL_Components(CL_Components &&rhs);
-	~CL_Components()
-	{
-		if (queue)
-			clReleaseCommandQueue(queue);
-		if (context)
-			clReleaseContext(context);
-		if (device)
-			clReleaseDevice(device);
-	};
+
+	void dispose();
 
 	bool success() const { return m_success; };
 	CL_Components& init();

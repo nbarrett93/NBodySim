@@ -188,6 +188,7 @@
     <ClCompile Include="camera.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="particle.cpp" />
+    <ClCompile Include="ShaderLoader.cpp" />
     <ClCompile Include="util.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -201,12 +202,14 @@
     <ClInclude Include="camera.h" />
     <ClInclude Include="ObjLoader.hpp" />
     <ClInclude Include="particle.h" />
+    <ClInclude Include="ShaderLoader.h" />
     <ClInclude Include="util.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Math.txt" />
   </ItemGroup>
   <ItemGroup>
+    <Intel_OpenCL_Build_Rules Include="dumb_kernel.cl" />
     <Intel_OpenCL_Build_Rules Include="resources\kernels\nbody.cl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
