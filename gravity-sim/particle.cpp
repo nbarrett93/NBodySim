@@ -17,7 +17,6 @@ ParticleSystem::ParticleSystem(SystemCL &&comps, ParticleSystemConfig cfg) :
 	m_cam(cfg.CamSettings),
 	m_delta1(0.033f),
 	m_delta2(0.033f),
-	m_model(Model<3>::FromString(cfg.ModelObjContents)),
 	m_error(false),
 	m_cfg(cfg),
 	m_light_pos(0.0, 100.0, 0.0, 0.0),
@@ -27,32 +26,23 @@ ParticleSystem::ParticleSystem(SystemCL &&comps, ParticleSystemConfig cfg) :
 
 void ParticleSystem::Init()
 {
-	// Create the instanced sphere renderer here
-
-	m_model.MakeVAO();
-
-	glBindVertexArray(m_model.VAO);
-
-	glGenBuffers(m_cfg.NumParticles, m_pos_instances);
-	glBindBuffer(GL_ARRAY_BUFFER, m_pos_instances[0]);
-
-	glBufferData(GL_ARRAY_BUFFER, m_cfg.NumParticles * 4 * sizeof(GLfloat), m_cfg.ParticlePositions, GL_DYNAMIC_DRAW);
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0);
-	glVertexAttribDivisor(2, 1);
-
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	m_shader.Load();
-	if (!m_shader.Success())
+	m_renderer.Load(m_cfg.ParticlePositions, m_cfg.NumParticles);
+	if (!m_renderer.Success())
 	{
-		m_log += "[SHADER] " + m_shader.ErrorText();
 		m_error = true;
+		m_log += "Renderer load error: " + m_renderer.ErrorText() + "\n";
 		return;
 	}
 
-	m_kernel.Load(gl_pos_buff, m_cfg.NumParticles);
+	// this is a bad solution. Need to provide a way to abstract out the instanced nature of the
+	// rendered object & link it with the CL kernel
+	m_kernel.Load(m_renderer.BufferLoc(), m_cfg.NumParticles);
+	if (!m_kernel.Success())
+	{
+		m_error = true;
+		m_log += "Kernel load error: " + m_renderer.ErrorText() + "\n";
+		return;
+	}
 }
 
 void ParticleSystem::update(float dt)
@@ -64,28 +54,26 @@ void ParticleSystem::update(float dt)
 	m_cam.Update();
 
 	m_kernel.Run(m_total);
+
+	if (!m_kernel.Success())
+	{
+		m_error = true;
+		m_log += "Error updating system: " + m_kernel.ErrorText() + "\n";
+	}
 }
 
 void ParticleSystem::draw()
 {
-	// call sphere's rendering method. remove all of this crap.
-
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glUseProgram(m_shader.Program());
+	m_renderer.Render(m_cam, m_light_pos);
 
-	glBindVertexArray(m_model.VAO);
-
-	glm::mat4 view = m_cam.View();
-	glm::mat4 view_persp = m_cam.Proj() * view;
-
-	glUniformMatrix4fv(m_shader.MVPULoc(), 1, GL_FALSE, glm::value_ptr(view_persp));
-	glUniformMatrix4fv(m_shader.ViewULoc(), 1, GL_FALSE, glm::value_ptr(view));
-	glUniform4fv(m_shader.LightPosULoc(), 1, glm::value_ptr(m_light_pos));
-
-	glDrawElementsInstanced(GL_TRIANGLES, m_model.Indices.size(), GL_UNSIGNED_SHORT, (void*)0, m_cfg.NumParticles);
-
-	glBindVertexArray(0);
+	if (!m_renderer.Success())
+	{
+		m_error = true;
+		m_log += "Renderer error: " + m_renderer.ErrorText() + "\n";
+		return;
+	}
 
 	// sync up so that we can run OpenCL
 	glFinish();

@@ -84,6 +84,12 @@
     <ClCompile Include="BounceKernel.cpp">
       <Filter>Source Files\Kernel</Filter>
     </ClCompile>
+    <ClCompile Include="Renderer.cpp">
+      <Filter>Source Files\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="InstSphereRenderer.cpp">
+      <Filter>Source Files\Rendering</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="glew32.dll" />
@@ -127,6 +133,12 @@
     </ClInclude>
     <ClInclude Include="BounceKernel.h">
       <Filter>Header Files\Kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="InstSphereRenderer.h">
+      <Filter>Header Files\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer.h">
+      <Filter>Header Files\Rendering</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

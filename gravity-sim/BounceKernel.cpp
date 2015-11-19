@@ -21,6 +21,7 @@ m_position(other.m_position)
 
 BounceKernel::~BounceKernel()
 {
+	return;
 	Dispose();
 }
 
@@ -48,6 +49,8 @@ void BounceKernel::Load(cl_GLuint pos_buffer, size_t num_objects)
 		m_log += "[FAIL] Unable to create position buffer: EC = " + std::to_string(cl_err) + "\n";
 		return;
 	}
+
+	m_position = buf;
 
 	m_success = true;
 }

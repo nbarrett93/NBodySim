@@ -189,11 +189,13 @@
   <ItemGroup>
     <ClCompile Include="BounceKernel.cpp" />
     <ClCompile Include="camera.cpp" />
+    <ClCompile Include="InstSphereRenderer.cpp" />
     <ClCompile Include="KernelBaseCL.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="particle.cpp" />
     <ClCompile Include="ParticleShader.cpp" />
     <ClCompile Include="ReadFile.cpp" />
+    <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="ShaderBase.cpp" />
     <ClCompile Include="SystemCL.cpp" />
   </ItemGroup>
@@ -206,11 +208,13 @@
     <ClInclude Include="BounceKernel.h" />
     <ClInclude Include="camera.h" />
     <ClInclude Include="CamSettings.h" />
+    <ClInclude Include="InstSphereRenderer.h" />
     <ClInclude Include="KernelBaseCL.h" />
     <ClInclude Include="ObjLoader.hpp" />
     <ClInclude Include="particle.h" />
     <ClInclude Include="ParticleShader.h" />
     <ClInclude Include="ReadFile.h" />
+    <ClInclude Include="Renderer.h" />
     <ClInclude Include="ShaderBase.h" />
     <ClInclude Include="SystemCL.h" />
     <ClInclude Include="SystemConfig.h" />

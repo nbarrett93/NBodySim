@@ -74,6 +74,10 @@ int main()
 	if (!window)
 	{
 		glfwTerminate();
+
+		std::cout << "Error creating window\n";
+		std::cin.get();
+
 		return -1;
 	}
 
@@ -83,7 +87,6 @@ int main()
 
 	if (!cl_state.Success())
 	{
-		// TODO: log failure
 		std::cout << "System.CL: " << cl_state.ErrorLog();
 		glfwDestroyWindow(window);
 		glfwTerminate();
@@ -94,9 +97,12 @@ int main()
 	glewExperimental = GL_TRUE;
 	if (glewInit() != GLEW_OK)
 	{
-		// TODO: log failure
 		glfwDestroyWindow(window);
 		glfwTerminate();
+
+		std::cout << "Error initializing GLEW\n";
+		std::cin.get();
+
 		return -1;
 	}
 
@@ -132,22 +138,10 @@ static void run_main_loop(SystemCL &&cl_state, GLFWwindow *window)
 	cam_cfg.AspectRatio = AspectRatio;
 	cfg.CamSettings = cam_cfg;
 
-	cfg.ModelObjContents = ReadFile(".\\resources\\models\\sphere.obj", succ);
-	if (!succ)
-	{
-		// TODO: log error in reading sphere model
-		return;
-	}
-
-	cfg.KernelSource = ReadFile(".\\resources\\kernels\\dumb_kernel.cl", succ);
-	if (!succ)
-	{
-		return;
-	}
-
 	// dummy values for testing
 	cfg.NumParticles = 3;
-	cfg.ParticlePositions = dummy_positions;
+	// blargh. gross.
+	cfg.ParticlePositions = reinterpret_cast<glm::vec4*>(dummy_positions);
 	cfg.ParticleMasses = dummy_masses;
 
 	ParticleSystem system(
@@ -189,7 +183,10 @@ static void run_main_loop(SystemCL &&cl_state, GLFWwindow *window)
 		system.update(dt);
 
 		if (!system.good())
+		{
 			glfwSetWindowShouldClose(window, GL_TRUE);
+			break;
+		}
 
 		system.draw();
 

@@ -8,6 +8,7 @@
 #include "SystemCL.h"
 #include "ParticleShader.h"
 #include "BounceKernel.h"
+#include "InstSphereRenderer.h"
 #include "camera.h"
 #include "ObjLoader.hpp"
 #include "CamSettings.h"
@@ -25,8 +26,7 @@ private:
 	ParticleSystemConfig m_cfg;
 
 	Camera m_cam;
-	Model<3> m_model;
-	ParticleShader m_shader;
+	InstSphereRenderer m_renderer;
 	BounceKernel m_kernel;
 	glm::vec4 m_light_pos;
 	

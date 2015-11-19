@@ -9,11 +9,9 @@ struct ParticleSystemConfig
 {
 	CameraSettings CamSettings;
 	uint32_t NumParticles;
-	float *ParticlePositions;
-	float *ParticleVelocities;
+	glm::vec4 *ParticlePositions;
+	glm::vec4 *ParticleVelocities;
 	float *ParticleMasses;
-	std::string KernelSource;
-	std::string ModelObjContents;
 };
 
 #endif
