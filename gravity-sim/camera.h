@@ -6,7 +6,7 @@
 #include <glm/vec3.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-struct ParticleSystemConfig;
+#include "CamSettings.h"
 
 class Camera
 {
@@ -31,10 +31,10 @@ private:
 	double m_xpos, m_ypos;
 	double m_dx, m_dy;
 
-	const ParticleSystemConfig& m_config;
+	const CameraSettings m_config;
 
 public:
-	Camera(const ParticleSystemConfig &cfg, float near_clip = 0.1f, float far_clip = 100.0f);
+	Camera(const CameraSettings &cfg, float near_clip = 0.1f, float far_clip = 100.0f);
 
 	const glm::mat4 View() const;
 	const glm::mat4& Proj() const

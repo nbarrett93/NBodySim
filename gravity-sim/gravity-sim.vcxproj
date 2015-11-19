@@ -89,8 +89,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Users\Nick\Documents\coding\gli-0.7.0.0\gli;C:\Users\Nick\Documents\coding\glm-0.9.7.1\glm;C:\Users\Nick\Documents\coding\glew-1.13.0\include;C:\Users\Nick\Documents\coding\glfw-3.1.2.bin.WIN64\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\Nick\Documents\coding\glew-1.13.0\lib\Release\x64;C:\Users\Nick\Documents\coding\glfw-3.1.2.bin.WIN64\lib-vc2013;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Intel\INDE\code_builder_5.2.0.65\include;C:\Users\Nick\Documents\coding\gli-0.7.0.0\gli;C:\Users\Nick\Documents\coding\glm-0.9.7.1\glm;C:\Users\Nick\Documents\coding\glew-1.13.0\include;C:\Users\Nick\Documents\coding\glfw-3.1.2.bin.WIN64\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Intel\INDE\code_builder_5.2.0.65\lib\x64;C:\Users\Nick\Documents\coding\glew-1.13.0\lib\Release\x64;C:\Users\Nick\Documents\coding\glfw-3.1.2.bin.WIN64\lib-vc2013;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Intel_OpenCL_Build_Rules>
@@ -178,6 +178,8 @@
       <AdditionalDependencies>OpenCL.lib;glfw3.lib;opengl32.lib;glew32.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
+      <LinkTimeCodeGeneration>Default</LinkTimeCodeGeneration>
+      <EnableCOMDATFolding>false</EnableCOMDATFolding>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -185,31 +187,39 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BounceKernel.cpp" />
     <ClCompile Include="camera.cpp" />
+    <ClCompile Include="KernelBaseCL.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="particle.cpp" />
-    <ClCompile Include="ShaderLoader.cpp" />
-    <ClCompile Include="util.cpp" />
+    <ClCompile Include="ParticleShader.cpp" />
+    <ClCompile Include="ReadFile.cpp" />
+    <ClCompile Include="ShaderBase.cpp" />
+    <ClCompile Include="SystemCL.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="glew32.dll" />
-    <None Include="resources\shaders\frag_shader.frag" />
-    <None Include="resources\shaders\test_shd.frag" />
-    <None Include="resources\shaders\test_shd.vert" />
-    <None Include="resources\shaders\vert_shader.vert" />
+    <None Include="resources\shaders\shader.frag" />
+    <None Include="resources\shaders\shader.vert" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BounceKernel.h" />
     <ClInclude Include="camera.h" />
+    <ClInclude Include="CamSettings.h" />
+    <ClInclude Include="KernelBaseCL.h" />
     <ClInclude Include="ObjLoader.hpp" />
     <ClInclude Include="particle.h" />
-    <ClInclude Include="ShaderLoader.h" />
-    <ClInclude Include="util.h" />
+    <ClInclude Include="ParticleShader.h" />
+    <ClInclude Include="ReadFile.h" />
+    <ClInclude Include="ShaderBase.h" />
+    <ClInclude Include="SystemCL.h" />
+    <ClInclude Include="SystemConfig.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="Math.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Intel_OpenCL_Build_Rules Include="resources\kernels\dumb_kernel.cl" />
+    <Intel_OpenCL_Build_Rules Include="resources\kernels\bounce_kernel.cl" />
     <Intel_OpenCL_Build_Rules Include="resources\kernels\nbody.cl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

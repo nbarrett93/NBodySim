@@ -1,16 +1,18 @@
-#include "ShaderLoader.h"
+#include "ShaderBase.h"
 
 #include <vector>
 
-void Shader::LoadProgram(const std::string &v_shader, const std::string &f_shader)
+ShaderBase::ShaderBase() : m_program(0), m_succeeded(false), m_log("")
 {
-	m_error = false;
+}
 
+void ShaderBase::Load(const std::string &vert_s, const std::string &frag_s)
+{
 	GLuint program, vert, frag;
 
 	vert = glCreateShader(GL_VERTEX_SHADER);
 
-	const char* src = v_shader.c_str();
+	const char* src = vert_s.c_str();
 
 	glShaderSource(vert, 1, &src, NULL);
 	glCompileShader(vert);
@@ -22,20 +24,19 @@ void Shader::LoadProgram(const std::string &v_shader, const std::string &f_shade
 		GLint maxLength = 0;
 		glGetShaderiv(vert, GL_INFO_LOG_LENGTH, &maxLength);
 
-		// The maxLength includes the NULL character
 		std::vector<GLchar> errorLog(maxLength);
 		glGetShaderInfoLog(vert, maxLength, &maxLength, &errorLog[0]);
 
-		ErrorText = std::string(errorLog.begin(), errorLog.end());
+		m_log += std::string(errorLog.begin(), errorLog.end()) + "\n";
 
-		m_error = true;
+		m_succeeded = false;
 		glDeleteShader(vert);
 
 		return;
 	}
 
 	frag = glCreateShader(GL_FRAGMENT_SHADER);
-	src = f_shader.c_str();
+	src = frag_s.c_str();
 
 	glShaderSource(frag, 1, &src, NULL);
 	glCompileShader(frag);
@@ -46,15 +47,15 @@ void Shader::LoadProgram(const std::string &v_shader, const std::string &f_shade
 		GLint maxLength = 0;
 		glGetShaderiv(vert, GL_INFO_LOG_LENGTH, &maxLength);
 
-		// The maxLength includes the NULL character
 		std::vector<GLchar> errorLog(maxLength);
 		glGetShaderInfoLog(vert, maxLength, &maxLength, &errorLog[0]);
 
-		ErrorText = std::string(errorLog.begin(), errorLog.end());
+		m_log += std::string(errorLog.begin(), errorLog.end()) + "\n";
 
-		m_error = true;
 		glDeleteShader(frag);
 		glDeleteShader(vert);
+
+		m_succeeded = false;
 
 		return;
 	}
@@ -72,17 +73,16 @@ void Shader::LoadProgram(const std::string &v_shader, const std::string &f_shade
 		GLint maxLength = 0;
 		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
 
-		//The maxLength includes the NULL character
 		std::vector<GLchar> infoLog(maxLength);
 		glGetProgramInfoLog(program, maxLength, &maxLength, &infoLog[0]);
-		ErrorText = std::string(infoLog.begin(), infoLog.end());
+		m_log += std::string(infoLog.begin(), infoLog.end()) + "\n";
 
 		glDeleteProgram(program);
 
 		glDeleteShader(vert);
 		glDeleteShader(frag);
 
-		m_error = true;
+		m_succeeded = false;
 
 		return;
 	}
@@ -93,29 +93,29 @@ void Shader::LoadProgram(const std::string &v_shader, const std::string &f_shade
 	glDetachShader(program, frag);
 	glDeleteShader(frag);
 
-	Program = program;
+	m_succeeded = true;
+
+	m_program = program;
 }
 
-Shader::~Shader()
+void ShaderBase::Dispose()
 {
-	glDeleteProgram(Program);
+	if (m_program)
+		glDeleteProgram(m_program);
+	m_program = 0;
 }
 
-GLuint Shader::TakeProgram()
+GLuint ShaderBase::Program() const
 {
-	GLuint p = Program;
-	Program = 0;
-	return p;
+	return m_program;
 }
 
-Shader::Shader(Shader &&rhs) :
-	Program(rhs.Program),
-	m_error(rhs.m_error),
-	ErrorText(std::move(rhs.ErrorText))
+bool ShaderBase::Success() const
 {
-	rhs.Program = 0;
+	return m_succeeded;
 }
 
-Shader::Shader() :
-	m_error(false)
-{}
+const std::string& ShaderBase::ErrorText() const
+{
+	return m_log;
+}

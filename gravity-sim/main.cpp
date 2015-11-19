@@ -11,7 +11,8 @@
 #include <Windows.h>
 #include <glm/common.hpp>
 
-#include "util.h"
+#include "SystemCL.h"
+#include "ReadFile.h"
 #include "particle.h"
 
 #include "ObjLoader.hpp"
@@ -22,7 +23,7 @@ static void error_callback(int error, const char* description)
 	std::cerr << description << std::endl;
 }
 
-static void run_main_loop(CL_Components &&cl_state, GLFWwindow *window);
+static void run_main_loop(SystemCL &&cl_state, GLFWwindow *window);
 
 static GLfloat dummy_positions[3 * 4] =
 {
@@ -36,16 +37,24 @@ static GLfloat dummy_masses[3] =
 	1.0, 2.0, 4.0
 };
 
+static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+static void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+static void button_callback(GLFWwindow* window, int button, int action, int mods);
+
 int main()
 {
 	// TODO: instantiate logger
 	// TODO: instantiate config reader
 
-	CL_Components cl_state;
+	SystemCL cl_state;
 
-	if (!cl_state.init().success())
+	cl_state.Load();
+
+	if (!cl_state.Success())
 	{
 		// TODO: log failure
+		std::cout << "SystemCL.Load(): " << cl_state.ErrorLog();
+		std::cin.get();
 		return -1;
 	}
 
@@ -70,11 +79,15 @@ int main()
 
 	glfwMakeContextCurrent(window);
 
-	if (!cl_state.setCtx(wglGetCurrentContext(), wglGetCurrentDC()).success())
+	cl_state.CreateContext(wglGetCurrentContext(), wglGetCurrentDC());
+
+	if (!cl_state.Success())
 	{
 		// TODO: log failure
+		std::cout << "System.CL: " << cl_state.ErrorLog();
 		glfwDestroyWindow(window);
 		glfwTerminate();
+		std::cin.get();
 		return -1;
 	}
 
@@ -87,9 +100,9 @@ int main()
 		return -1;
 	}
 
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
+	glfwSetKeyCallback(window, key_callback);
+	glfwSetCursorPosCallback(window, mouse_callback);
+	glfwSetMouseButtonCallback(window, button_callback);
 
 	run_main_loop(std::move(cl_state), window);
 
@@ -100,6 +113,97 @@ int main()
 	//std::cin.get();
 
 	return 0;
+}
+
+static void run_main_loop(SystemCL &&cl_state, GLFWwindow *window)
+{
+	// TODO: take these from config
+	const float FieldOfView = 3.14159265359f / 3.0f,
+		AspectRatio = 1280.0f / 720.0f;
+	bool succ = false;
+
+	ParticleSystemConfig cfg;
+
+	CameraSettings cam_cfg;
+	cam_cfg.CamSensitivity = 0.5;
+	cam_cfg.CamVelocity = 3;
+	cam_cfg.Window = window;
+	cam_cfg.FoV = FieldOfView;
+	cam_cfg.AspectRatio = AspectRatio;
+	cfg.CamSettings = cam_cfg;
+
+	cfg.ModelObjContents = ReadFile(".\\resources\\models\\sphere.obj", succ);
+	if (!succ)
+	{
+		// TODO: log error in reading sphere model
+		return;
+	}
+
+	cfg.KernelSource = ReadFile(".\\resources\\kernels\\dumb_kernel.cl", succ);
+	if (!succ)
+	{
+		return;
+	}
+
+	// dummy values for testing
+	cfg.NumParticles = 3;
+	cfg.ParticlePositions = dummy_positions;
+	cfg.ParticleMasses = dummy_masses;
+
+	ParticleSystem system(
+		std::move(cl_state),
+		cfg
+	);
+
+	system.Init();
+
+	if (!system.good())
+	{
+		std::cout << "Error initializing system." << std::endl;
+		std::cout << system.err_log() << std::endl;
+		std::cin.get();
+		return;
+	}
+
+	// GPU gets hammered without this...
+	glfwSwapInterval(1);
+
+	glfwSetWindowUserPointer(window, (void*)&system);
+
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+
+	glClearColor(0.0, 0.0, 0.0, 0);
+
+	float dt = 0.033f;
+	bool first = true;
+	glfwSetTime(0.0);
+
+	while (!glfwWindowShouldClose(window) && system.good())
+	{
+		dt = first ? dt : glfwGetTime();
+		first = false;
+		glfwSetTime(0.0);
+
+		system.update(dt);
+
+		if (!system.good())
+			glfwSetWindowShouldClose(window, GL_TRUE);
+
+		system.draw();
+
+		glfwSwapBuffers(window);
+		glfwPollEvents();
+	}
+
+	if (!system.good())
+	{
+		std::cout << "Error in main loop:\n    " << system.err_log() << std::endl;
+		std::cin.get();
+	}
+
+	glfwSetWindowUserPointer(window, NULL);
 }
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -145,100 +249,4 @@ static void button_callback(GLFWwindow* window, int button, int action, int mods
 		return;
 
 	system->HandleButton(button, action);
-}
-
-static void run_main_loop(CL_Components &&cl_state, GLFWwindow *window)
-{
-	// TODO: take these from config
-	const float FieldOfView = 3.14159265359f / 3.0f,
-		AspectRatio = 1280.0f / 720.0f;
-	bool succ = false;
-
-	ParticleSystemConfig cfg;
-	cfg.CamSensitivity = 0.5;
-	cfg.CamVelocity = 3;
-	cfg.Window = window;
-	cfg.FoV = FieldOfView;
-	cfg.AspectRatio = AspectRatio;
-	cfg.ModelObjContents = read_file(".\\resources\\models\\sphere.obj", succ);
-	if (!succ)
-	{
-		// TODO: log error in reading sphere model
-		return;
-	}
-	cfg.VertShader = read_file(".\\resources\\shaders\\test_shd.vert", succ);
-	if (!succ)
-	{
-		// TODO: log error in reading vertex shader
-		return;
-	}
-	cfg.FragShader = read_file(".\\resources\\shaders\\test_shd.frag", succ);
-	if (!succ)
-	{
-		// TODO: log error in reading fragment shader
-		return;
-	}
-	cfg.KernelSource = read_file(".\\resources\\kernels\\dumb_kernel.cl", succ);
-	if (!succ)
-	{
-		return;
-	}
-
-	// dummy values for testing
-	cfg.NumParticles = 3;
-	cfg.ParticlePositions = dummy_positions;
-	cfg.ParticleMasses = dummy_masses;
-
-	ParticleSystem system(
-		cl_state,
-		cfg
-	);
-
-	system.Init();
-
-	if (!system.good())
-	{
-		std::cout << "Error initializing system." << std::endl;
-		std::cout << system.err_log() << std::endl;
-		std::cin.get();
-		return;
-	}
-
-	//glfwSwapInterval(1);
-
-	glfwSetWindowUserPointer(window, (void*)&system);
-
-	glfwSetKeyCallback(window, key_callback);
-	glfwSetCursorPosCallback(window, mouse_callback);
-	glfwSetMouseButtonCallback(window, button_callback);
-
-	glClearColor(0.0, 0.0, 0.0, 0);
-
-	float dt = 0.033f;
-	bool first = true;
-	glfwSetTime(0.0);
-
-	while (!glfwWindowShouldClose(window) && system.good())
-	{
-		dt = first ? dt : glfwGetTime();
-		first = false;
-		glfwSetTime(0.0);
-
-		system.update(dt);
-
-		if (!system.good())
-		{
-			std::cout << "Error in update(): " << std::endl << system.err_log() << std::endl;
-			glfwSetWindowShouldClose(window, GL_TRUE);
-		}
-
-		system.draw();
-
-		glfwSwapBuffers(window);
-		glfwPollEvents();
-	}
-
-	//std::cin.get();
-
-	glfwSetWindowUserPointer(window, NULL);
 }

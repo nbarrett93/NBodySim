@@ -17,7 +17,6 @@
 template <size_t T>
 struct Face
 {
-	// index of each vertex
 	uint16_t Vertices[T];
 };
 
@@ -32,17 +31,8 @@ public:
 	std::vector<glm::vec3> Normals;
 	std::vector<glm::vec3> TexCoords;
 
-	// Vertices, Normals, Indices
-	GLuint Buffers[3];
-	GLuint VAO;
-
-	GLuint MakeVAO();
-	void OwnBuffers();
-
-	Model() :
-		VAO(0)
+	Model()
 	{
-		memset(Buffers, 0, 3 * sizeof(GLuint));
 	};
 	Model(Model &&rhs);
 	~Model();
@@ -53,65 +43,17 @@ public:
 };
 
 template <size_t T>
-GLuint Model<T>::MakeVAO()
-{
-	GLuint vao;
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
-	VAO = vao;
-
-	// vertices, normals, indices
-	GLuint vbo[3];
-	glGenBuffers(3, vbo);
-
-	memcpy(Buffers, vbo, 3 * sizeof(GLuint));
-
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-	glBufferData(GL_ARRAY_BUFFER, Vertices.size() * sizeof(Vertices[0]), &Vertices[0], GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Vertices[0]), (const GLvoid*)0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-	glBufferData(GL_ARRAY_BUFFER, Normals.size() * sizeof(Normals[0]), &Normals[0], GL_STATIC_DRAW);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Normals[0]), (const GLvoid*)0);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vbo[2]);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, Indices.size() * sizeof(Indices[0]), &Indices[0], GL_STATIC_DRAW);
-
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-	return vao;
-}
-
-template <size_t T>
 Model<T>::~Model()
 {
-	glDeleteBuffers(3, Buffers);
-	glDeleteVertexArrays(1, &VAO);
 }
 
 template <size_t T>
 Model<T>::Model(Model<T> &&rhs) :
-	VAO(rhs.VAO),
 	Indices(std::move(rhs.Indices)),
 	Vertices(std::move(rhs.Vertices)),
 	Normals(std::move(rhs.Normals)),
 	TexCoords(std::move(rhs.TexCoords))
 {
-	memcpy(Buffers, rhs.Buffers, 3 * sizeof(GLuint));
-
-	rhs.OwnBuffers();
-}
-
-template <size_t T>
-void Model<T>::OwnBuffers()
-{
-	memset(Buffers, 0, 3 * sizeof(GLuint));
-	VAO = 0;
 }
 
 template <size_t T>

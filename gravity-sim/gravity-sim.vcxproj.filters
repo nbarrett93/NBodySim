@@ -25,54 +25,108 @@
     <Filter Include="Notes">
       <UniqueIdentifier>{28385520-c160-4790-8f63-c99a3bb62b11}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Camera">
+      <UniqueIdentifier>{afffdf47-6cff-410e-8173-b694ee7d60e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Shader">
+      <UniqueIdentifier>{773fe87e-3e47-42b3-82fc-4dd2eef1e359}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Shader">
+      <UniqueIdentifier>{e4ca13de-dd93-4d51-b8bb-f95c894b4376}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Util">
+      <UniqueIdentifier>{76f56bd8-5067-48d4-98cb-5dbb48a66993}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Util">
+      <UniqueIdentifier>{d513c25e-3f54-42f6-8216-e3e869e48707}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Rendering">
+      <UniqueIdentifier>{d332a519-d6b0-46e7-8c69-63bbd2a5f086}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Rendering">
+      <UniqueIdentifier>{1e1b81da-52d0-41e4-b7c3-d6e0623a0ac3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Kernel">
+      <UniqueIdentifier>{7a7946ad-c157-411d-a536-f2f9f82d9565}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Kernel">
+      <UniqueIdentifier>{3fbe44e8-8a92-450f-bfe8-42f9e8e28417}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Camera">
+      <UniqueIdentifier>{78e36e13-b992-4a8d-8006-5a7bf9a54853}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="util.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="camera.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="particle.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ShaderLoader.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="ShaderBase.cpp">
+      <Filter>Source Files\Shader</Filter>
+    </ClCompile>
+    <ClCompile Include="ParticleShader.cpp">
+      <Filter>Source Files\Shader</Filter>
+    </ClCompile>
+    <ClCompile Include="ReadFile.cpp">
+      <Filter>Source Files\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="KernelBaseCL.cpp">
+      <Filter>Source Files\Kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemCL.cpp">
+      <Filter>Source Files\Kernel</Filter>
+    </ClCompile>
+    <ClCompile Include="camera.cpp">
+      <Filter>Source Files\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="BounceKernel.cpp">
+      <Filter>Source Files\Kernel</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="glew32.dll" />
-    <None Include="resources\shaders\frag_shader.frag">
+    <None Include="resources\shaders\shader.frag">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="resources\shaders\vert_shader.vert">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="resources\shaders\test_shd.frag">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="resources\shaders\test_shd.vert">
+    <None Include="resources\shaders\shader.vert">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="util.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="camera.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="particle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ObjLoader.hpp">
+    <ClInclude Include="SystemConfig.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ShaderLoader.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="camera.h">
+      <Filter>Header Files\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="CamSettings.h">
+      <Filter>Header Files\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderBase.h">
+      <Filter>Header Files\Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="ParticleShader.h">
+      <Filter>Header Files\Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="ReadFile.h">
+      <Filter>Header Files\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="KernelBaseCL.h">
+      <Filter>Header Files\Kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="SystemCL.h">
+      <Filter>Header Files\Kernel</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjLoader.hpp">
+      <Filter>Header Files\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="BounceKernel.h">
+      <Filter>Header Files\Kernel</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -84,7 +138,7 @@
     <Intel_OpenCL_Build_Rules Include="resources\kernels\nbody.cl">
       <Filter>OpenCL Files</Filter>
     </Intel_OpenCL_Build_Rules>
-    <Intel_OpenCL_Build_Rules Include="resources\kernels\dumb_kernel.cl">
+    <Intel_OpenCL_Build_Rules Include="resources\kernels\bounce_kernel.cl">
       <Filter>OpenCL Files</Filter>
     </Intel_OpenCL_Build_Rules>
   </ItemGroup>

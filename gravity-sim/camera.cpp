@@ -8,7 +8,7 @@
 #include <glm/gtx/quaternion.hpp>
 #include <GLFW/glfw3.h>
 
-Camera::Camera(const ParticleSystemConfig &cfg, float near_clip, float far_clip) :
+Camera::Camera(const CameraSettings &cfg, float near_clip, float far_clip) :
 	m_position(0.0f, 2.0f, 4.0f),
 	m_near_clip(near_clip),
 	m_far_clip(far_clip),
