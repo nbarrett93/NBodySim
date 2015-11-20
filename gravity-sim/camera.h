@@ -14,15 +14,10 @@ private:
 	const float m_near_clip;
 	const float m_far_clip;
 
-	const float m_sens;
-	const float m_vel;
-
 	const glm::mat4 m_proj;
 
 	glm::vec3 m_position;
-	glm::vec3 m_up;
-	glm::vec3 m_right;
-	//glm::dquat m_quat;
+	glm::dquat m_quat;
 
 	bool m_left_down;
 	bool m_right_down;
@@ -37,15 +32,12 @@ public:
 	Camera(const CameraSettings &cfg, float near_clip = 0.1f, float far_clip = 100.0f);
 
 	const glm::mat4 View() const;
-	const glm::mat4& Proj() const
-	{
-		return m_proj;
-	};
+	const glm::mat4& Proj() const;
 
-	glm::vec3 Up() const;
-	glm::vec3 Right() const;
+	glm::dvec3 Up() const;
+	glm::dvec3 Right() const;
 
-	void Update();
+	void Update(float dt);
 
 	bool HandleKey(int key, int action);
 	bool HandleMouse(double xpos, double ypos);

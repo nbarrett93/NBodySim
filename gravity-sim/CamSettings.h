@@ -5,8 +5,8 @@ struct GLFWwindow;
 
 struct CameraSettings
 {
-	float CamVelocity;
-	float CamSensitivity;
+	double CamVelocity;
+	double CamSensitivity;
 	float FoV;
 	float AspectRatio;
 	GLFWwindow *Window;

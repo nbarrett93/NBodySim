@@ -13,10 +13,7 @@ Camera::Camera(const CameraSettings &cfg, float near_clip, float far_clip) :
 	m_near_clip(near_clip),
 	m_far_clip(far_clip),
 	m_proj(glm::perspective(cfg.FoV, cfg.AspectRatio, near_clip, far_clip)),
-	m_sens(cfg.CamSensitivity),
-	m_vel(cfg.CamVelocity),
-	m_up(0.0, 1.0, 0.0),
-	m_right(1.0, 0.0, 0.0),
+	//m_quat(0.0, 0.0, 0.0, 0.0),
 	m_left_down(false),
 	m_right_down(false),
 	m_space_down(false),
@@ -30,18 +27,22 @@ Camera::Camera(const CameraSettings &cfg, float near_clip, float far_clip) :
 
 const glm::mat4 Camera::View() const
 {
-	glm::quat quat = glm::rotation(glm::cross(m_right, m_up), glm::vec3(0.0, 0.0, 1.0));
-	return glm::mat4_cast(quat) * glm::translate(m_position * -1.0f);
+	return glm::mat4_cast((glm::fquat)glm::inverse(m_quat)) * glm::translate(m_position * -1.0f);
 }
 
-glm::vec3 Camera::Up() const
+const glm::mat4& Camera::Proj() const
 {
-	return m_up;
+	return m_proj;
 }
 
-glm::vec3 Camera::Right() const
+glm::dvec3 Camera::Up() const
 {
-	return m_right;
+	return glm::normalize(m_quat * glm::dvec3(0.0, 1.0, 0.0));
+}
+
+glm::dvec3 Camera::Right() const
+{
+	return glm::normalize(m_quat * glm::dvec3(1.0, 0.0, 0.0));;
 }
 
 bool Camera::HandleKey(int key, int action)
@@ -57,10 +58,7 @@ bool Camera::HandleKey(int key, int action)
 		break;
 	case GLFW_KEY_ENTER:
 		// reset camera orientation
-		// this line is from the old method of storing rotation as a quat
-		//m_quat = glm::quat(1.0, 0.0, 0.0, 0.0);
-		m_up = glm::vec3(0.0, 1.0, 0.0);
-		m_right = glm::vec3(1.0, 0.0, 0.0);
+		m_quat = glm::dquat();
 		return true;
 	default:
 		return false;
@@ -126,48 +124,64 @@ bool Camera::HandleButton(int button, int action)
 	return true;
 }
 
-void Camera::Update()
+void Camera::Update(float dt)
 {
-	glm::vec3 pos_vec(m_dx, m_dy, 0.0);
-	float len = pos_vec.length();
+	double len = glm::length(glm::dvec2(m_dx, m_dy));
 
 	// if we dont have any offset, just return
 	if (len < 0.00001)
 		return;
+
+	glm::dvec3 pos_vec = glm::normalize(glm::vec3(m_dx, m_dy, 0.0));
+
+	// (0,1,0)
+	glm::dvec3 right = Right();
+	// (1,0,0)
+	glm::dvec3 up = Up();
+	// (0,0,-1)
+	glm::dvec3 forward = glm::normalize(glm::cross(up, right));
 
 	if (m_right_down)
 	{
 		if (m_space_down)
 		{
 			// go 'up'
-			m_position -= m_up * (float)m_dy * m_config.CamVelocity;
+			m_position -= up * m_dy * m_config.CamVelocity;
 		}
 		else
 		{
 			// go 'forward'
-			glm::vec3 dir = glm::normalize(glm::cross(m_up, m_right));
-			m_position -= dir * (float)m_dy * m_config.CamVelocity;
+			m_position -= forward * m_dy * m_config.CamVelocity;
 		}
 
-		m_position -= m_right * (float)m_dx * m_config.CamVelocity;
+		m_position -= right * m_dx * m_config.CamVelocity;
 
 		m_dx = 0;
 		m_dy = 0;
 	}
 	else if (m_left_down)
 	{
-		glm::vec3 p_hat = pos_vec / len;
+		// Issue: moving camera in circles causes the world to roll
+		// This is a consequence of allowing the camera to have the full two deg of freedom
+		// about the x and y axes.
+
+		// len gives angle of rotation
+		// *** this method will cause erratic camera rotation if the framerate drops
+		// causing len to be large ***
+		double theta = m_config.CamSensitivity * len;
+
+		// transform p_hat from world -> camera space i.e. (x,y,0) -> (x', y', z')
+		glm::dvec3 p_cam_hat = glm::normalize(m_quat * pos_vec);
 
 		// axis of rotation
-		glm::vec3 r = glm::cross(glm::cross(m_right, m_up), p_hat);
+		glm::dvec3 r = glm::cross(p_cam_hat, forward);
+		// since we don't allow roll. This will improve noise.
+		r.z = 0.0;
+		r = glm::normalize(r);
 
-		// theta gives angle of rotation
-		float theta = m_config.CamSensitivity * len;
+		glm::dquat q_operation = glm::angleAxis(theta, r);
 
-		glm::quat q = glm::angleAxis(theta, r);
-
-		m_right = glm::normalize(q * m_right);
-		m_up = glm::normalize(q * m_up);
+		m_quat = glm::normalize(q_operation * m_quat);
 
 		m_dx = 0;
 		m_dy = 0;

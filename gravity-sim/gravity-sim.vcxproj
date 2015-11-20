@@ -70,6 +70,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="..\..\..\PropertySheets\GLFW.props" />
+    <Import Project="..\..\..\PropertySheets\GLEW.props" />
+    <Import Project="..\..\..\PropertySheets\GLM.props" />
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -89,8 +92,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Intel\INDE\code_builder_5.2.0.65\include;C:\Users\Nick\Documents\coding\gli-0.7.0.0\gli;C:\Users\Nick\Documents\coding\glm-0.9.7.1\glm;C:\Users\Nick\Documents\coding\glew-1.13.0\include;C:\Users\Nick\Documents\coding\glfw-3.1.2.bin.WIN64\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Intel\INDE\code_builder_5.2.0.65\lib\x64;C:\Users\Nick\Documents\coding\glew-1.13.0\lib\Release\x64;C:\Users\Nick\Documents\coding\glfw-3.1.2.bin.WIN64\lib-vc2013;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Intel\INDE\code_builder_5.2.0.65\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Intel\INDE\code_builder_5.2.0.65\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Intel_OpenCL_Build_Rules>

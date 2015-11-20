@@ -19,7 +19,7 @@ ParticleSystem::ParticleSystem(SystemCL &&comps, ParticleSystemConfig cfg) :
 	m_delta2(0.033f),
 	m_error(false),
 	m_cfg(cfg),
-	m_light_pos(0.0, 100.0, 0.0, 0.0),
+	m_light_pos(0.0, 4.0, -4.0, 0.0),
 	m_total(0.0)
 {
 }
@@ -51,7 +51,7 @@ void ParticleSystem::update(float dt)
 	m_delta1 = dt;
 	m_total += dt;
 
-	m_cam.Update();
+	m_cam.Update(dt);
 
 	m_kernel.Run(m_total);
 
