@@ -19,8 +19,7 @@ void main()
     vec3 light_dir_normalized = normalize(light_dir_cam);
     vec3 normal_cam_normalized = normalize(normal_cam);
     
-    vec3 refl_dir = normalize(2.0 * dot(light_dir_normalized, normal_cam_normalized) * normal_cam_normalized - 
-        light_dir_normalized);
+    vec3 refl_dir = normalize(2.0 * dot(light_dir_normalized, normal_cam_normalized) * normal_cam_normalized - light_dir_normalized);
     
     float diffuse_ratio = max(0.0, dot(normal_cam_normalized, light_dir_normalized));
     float specular_ratio = pow(max(0.0, dot(refl_dir, normalize(vert_pos_cam))), ALPHA);

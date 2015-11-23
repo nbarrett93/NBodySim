@@ -5,6 +5,7 @@
 // virtual render() func
 
 #include <GL/glew.h>
+#include <memory>
 
 #include "ObjLoader.hpp"
 #include "ShaderBase.h"
@@ -13,7 +14,7 @@ class Renderer
 {
 protected:
 	Model<3> m_model;
-	ShaderBase m_shader;
+	std::unique_ptr<ShaderBase> m_shader;
 
 	GLuint m_vao;
 	GLuint m_vertices;
@@ -31,8 +32,8 @@ public:
 	Renderer();
 	virtual ~Renderer();
 
-	void Render();
-	void Load(Model<3> &model, ShaderBase &shader);
+	virtual void Render();
+	void Load(Model<3> &model, std::unique_ptr<ShaderBase> shader);
 
 	virtual void Dispose();
 

@@ -4,6 +4,7 @@
 #include <GL/glew.h>
 #include <glm/vec3.hpp>
 #include <vector>
+#include <memory>
 
 #include "SystemCL.h"
 #include "ParticleShader.h"
@@ -26,16 +27,17 @@ private:
 	ParticleSystemConfig m_cfg;
 
 	Camera m_cam;
-	InstSphereRenderer m_renderer;
-	BounceKernel m_kernel;
+	std::unique_ptr<Renderer> m_renderer;
+	std::unique_ptr<KernelBaseCL> m_kernel;
+    ShaderMgr m_shaderMgr;
 	glm::vec4 m_light_pos;
 	
 	bool m_error;
 	std::string m_log;
 
 	// Hide yo copy ctor
-	ParticleSystem(const ParticleSystem& rhs) : m_cam(rhs.m_cam), m_kernel(rhs.m_CL)
-	{};
+	ParticleSystem(const ParticleSystem& rhs) = delete;
+	ParticleSystem& operator=(const ParticleSystem& rhs) = delete;
 public:
 	ParticleSystem(SystemCL &&comps, ParticleSystemConfig cfg);
 	~ParticleSystem();

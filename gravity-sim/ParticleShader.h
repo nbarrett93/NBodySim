@@ -22,13 +22,10 @@ private:
 	static const std::string MVPName;
 	static const std::string ModelPosName;
 
-	static const std::string VertexShader;
-	static const std::string FragmentShader;
-
 public:
 	ParticleShader();
 
-	void Load();
+	void Load(ShaderMgr &sm);
 
 	GLint PositionLoc() const;
 	GLint ModelPosLoc() const;

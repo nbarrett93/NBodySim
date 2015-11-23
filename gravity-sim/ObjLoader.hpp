@@ -23,17 +23,16 @@ struct Face
 template <size_t T = 3>
 struct Model
 {
-private:
-	Model(const Model<T>&) {};
-public:
 	std::vector<uint16_t> Indices;
 	std::vector<glm::vec4> Vertices;
 	std::vector<glm::vec3> Normals;
-	std::vector<glm::vec3> TexCoords;
+	std::vector<glm::vec2> TexCoords;
 
 	Model()
 	{
 	};
+	Model(const Model<T> &rhs) = default;
+	Model& operator=(const Model<T> &rhs) = default;
 	Model(Model &&rhs);
 	~Model();
 
@@ -68,7 +67,7 @@ template <size_t T = 3>
 Model<T> Model<T>::FromStream(std::istream &s)
 {
 	std::vector<glm::vec4> GeomVerts;
-	std::vector<glm::vec3> TexCoords;
+	std::vector<glm::vec2> TexCoords;
 	std::vector<glm::vec3> Normals;
 	std::vector<glm::vec3> ParameterVerts;
 	std::vector< Face_<T> > Faces;
@@ -110,6 +109,7 @@ Model<T> Model<T>::FromStream(std::istream &s)
 				break;
 			case 't':
 				// texture coord follows
+				tmp[2] = 0.0f;
 				s >> tmp[0];
 				s >> tmp[1];
 				while (s.peek() == ' ')
@@ -123,7 +123,7 @@ Model<T> Model<T>::FromStream(std::istream &s)
 					s >> tmp[2];
 					s.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 				}
-				TexCoords.emplace_back(glm::vec3(tmp[0], tmp[1], tmp[2]));
+				TexCoords.emplace_back(glm::vec2(tmp[0], tmp[1]));
 				break;
 			case 'n':
 				// normal coord follows

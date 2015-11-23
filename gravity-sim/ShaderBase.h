@@ -4,6 +4,8 @@
 #include <string>
 #include <GL/glew.h>
 
+#include "ShaderMgr.h"
+
 class ShaderBase
 {
 protected:
@@ -13,7 +15,7 @@ protected:
 
 public:
 	ShaderBase();
-	virtual void Load(const std::string &vert, const std::string &frag);
+    virtual void Load(ShaderMgr &sm, const std::string name = "");
 	virtual void Dispose();
 
 	GLuint Program() const;

@@ -10,7 +10,9 @@
 #include <CL/opencl.h>
 #include <Windows.h>
 #include <glm/common.hpp>
+#include <glm/gtc/constants.hpp>
 
+#include "ShaderMgr.h"
 #include "SystemCL.h"
 #include "ReadFile.h"
 #include "particle.h"
@@ -43,7 +45,7 @@ static void button_callback(GLFWwindow* window, int button, int action, int mods
 
 int main()
 {
-	// TODO: instantiate logger
+    // TODO: instantiate logger
 	// TODO: instantiate config reader
 
 	SystemCL cl_state;
@@ -63,8 +65,8 @@ int main()
 	if (!glfwInit())
 		exit(EXIT_FAILURE);
 
-	// 4x AA
-	glfwWindowHint(GLFW_SAMPLES, 4);
+	// 2x AA
+	glfwWindowHint(GLFW_SAMPLES, 2);
 	// OpenGL 4.0
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
@@ -88,8 +90,10 @@ int main()
 	if (!cl_state.Success())
 	{
 		std::cout << "System.CL: " << cl_state.ErrorLog();
+
 		glfwDestroyWindow(window);
 		glfwTerminate();
+
 		std::cin.get();
 		return -1;
 	}
@@ -116,15 +120,13 @@ int main()
 
 	glfwTerminate();
 
-	//std::cin.get();
-
 	return 0;
 }
 
 static void run_main_loop(SystemCL &&cl_state, GLFWwindow *window)
 {
 	// TODO: take these from config
-	const float FieldOfView = 3.14159265359f / 3.0f,
+	const float FieldOfView = glm::pi<float>() / 3.0f,
 		AspectRatio = 1280.0f / 720.0f;
 	bool succ = false;
 
@@ -205,7 +207,6 @@ static void run_main_loop(SystemCL &&cl_state, GLFWwindow *window)
 
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	// TODO: send this info to the particle system
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 	{
 		glfwSetWindowShouldClose(window, GL_TRUE);

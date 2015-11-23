@@ -16,27 +16,35 @@ Renderer::~Renderer()
 	Dispose();
 }
 
-void Renderer::Load(Model<3> &model, ShaderBase &shader)
+void Renderer::Load(Model<3> &model, std::unique_ptr<ShaderBase> shader)
 {
 	m_model = model;
-	m_shader = shader;
+	m_shader = std::move(shader);
 
 	glGenVertexArrays(1, &m_vao);
 
 	glBindVertexArray(m_vao);
 
-	glGenBuffers(1, &m_vertices);
-	glGenBuffers(1, &m_normals);
-	glGenBuffers(1, &m_indices);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_vertices);
-	glBufferData(GL_ARRAY_BUFFER, m_model.Vertices.size() * sizeof(m_model.Vertices[0]), &m_model.Vertices[0], GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ARRAY_BUFFER, m_normals);
-	glBufferData(GL_ARRAY_BUFFER, m_model.Normals.size() * sizeof(m_model.Normals[0]), &m_model.Normals[0], GL_STATIC_DRAW);
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indices);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_model.Indices.size() * sizeof(m_model.Normals[0]), &m_model.Indices[0], GL_STATIC_DRAW);
+	if (m_model.Vertices.size() != 0)
+	{
+		glGenBuffers(1, &m_vertices);
+		glBindBuffer(GL_ARRAY_BUFFER, m_vertices);
+		glBufferData(GL_ARRAY_BUFFER, m_model.Vertices.size() * sizeof(m_model.Vertices[0]), &m_model.Vertices[0], GL_STATIC_DRAW);
+	}
+	
+	if (m_model.Normals.size() != 0)
+	{
+		glGenBuffers(1, &m_normals);
+		glBindBuffer(GL_ARRAY_BUFFER, m_normals);
+		glBufferData(GL_ARRAY_BUFFER, m_model.Normals.size() * sizeof(m_model.Normals[0]), &m_model.Normals[0], GL_STATIC_DRAW);
+	}
+	
+	if (m_model.Indices.size() != 0)
+	{
+		glGenBuffers(1, &m_indices);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indices);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_model.Indices.size() * sizeof(m_model.Normals[0]), &m_model.Indices[0], GL_STATIC_DRAW);
+	}
 
 	glBindVertexArray(0);
 
@@ -66,7 +74,7 @@ void Renderer::Dispose()
 void Renderer::Render()
 {
 	glBindVertexArray(m_vao);
-	glUseProgram(m_shader.Program());
+	glUseProgram(m_shader->Program());
 
 	glDrawElements(GL_TRIANGLES, m_model.Indices.size(), GL_UNSIGNED_SHORT, (void*)0);
 

@@ -9,9 +9,6 @@ const std::string ParticleShader::ViewName = "v_matrix";
 const std::string ParticleShader::MVPName = "mvp_matrix";
 const std::string ParticleShader::ModelPosName = "offset";
 
-const std::string ParticleShader::VertexShader = ".\\resources\\shaders\\shader.vert";
-const std::string ParticleShader::FragmentShader = ".\\resources\\shaders\\shader.frag";
-
 ParticleShader::ParticleShader() :
 m_lightpos_loc(-1),
 m_modelpos_loc(-1),
@@ -22,32 +19,15 @@ m_normal_loc(-1)
 {
 }
 
-void ParticleShader::Load()
+void ParticleShader::Load(ShaderMgr &sm)
 {
-	bool FileReadSucc = false;
-
-	std::string vert_s = ReadFile(VertexShader, FileReadSucc);
-	if (!FileReadSucc)
-	{
-		m_succeeded = false;
-		m_log += "Error reading vertex shader\n";
-
-		return;
-	}
-
-	std::string frag_s = ReadFile(FragmentShader, FileReadSucc);
-	if (!FileReadSucc)
-	{
-		m_succeeded = false;
-		m_log += "Error reading fragment shader\n";
-
-		return;
-	}
-
-	ShaderBase::Load(vert_s, frag_s);
-
-	if (!Success())
-		return;
+    m_program = sm.Get("particles");
+    if (m_program == -1)
+    {
+        m_succeeded = false;
+        m_log += "Error in ShaderMgr: " + sm.ErrorLog() + "\n";
+        return;
+    }
 
 	m_lightpos_loc = glGetUniformLocation(Program(), LightPosName.c_str());
 	m_mvp_loc = glGetUniformLocation(Program(), MVPName.c_str());
@@ -56,6 +36,8 @@ void ParticleShader::Load()
 	m_modelpos_loc = glGetAttribLocation(Program(), ModelPosName.c_str());
 	m_position_loc = glGetAttribLocation(Program(), PositionName.c_str());
 	m_normal_loc = glGetAttribLocation(Program(), NormalName.c_str());
+
+    m_succeeded = true;
 }
 
 GLint ParticleShader::PositionLoc() const

@@ -17,11 +17,6 @@
       <UniqueIdentifier>{4a6b0941-61cc-41cf-af67-bc0c7575384d}</UniqueIdentifier>
       <ParseFiles>false</ParseFiles>
     </Filter>
-    <Filter Include="Libs">
-      <UniqueIdentifier>{edd8ae3c-2d96-4499-ada5-f36fb8bf7bdb}</UniqueIdentifier>
-      <ParseFiles>false</ParseFiles>
-      <SourceControlFiles>False</SourceControlFiles>
-    </Filter>
     <Filter Include="Notes">
       <UniqueIdentifier>{28385520-c160-4790-8f63-c99a3bb62b11}</UniqueIdentifier>
     </Filter>
@@ -90,6 +85,15 @@
     <ClCompile Include="InstSphereRenderer.cpp">
       <Filter>Source Files\Rendering</Filter>
     </ClCompile>
+    <ClCompile Include="PlanesRenderer.cpp">
+      <Filter>Source Files\Rendering</Filter>
+    </ClCompile>
+    <ClCompile Include="PlaneShader.cpp">
+      <Filter>Source Files\Shader</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderMgr.cpp">
+      <Filter>Source Files\Shader</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="glew32.dll" />
@@ -99,6 +103,7 @@
     <None Include="resources\shaders\shader.vert">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="particle.h">
@@ -139,6 +144,15 @@
     </ClInclude>
     <ClInclude Include="Renderer.h">
       <Filter>Header Files\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="PlanesRenderer.h">
+      <Filter>Header Files\Rendering</Filter>
+    </ClInclude>
+    <ClInclude Include="PlaneShader.h">
+      <Filter>Header Files\Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderMgr.h">
+      <Filter>Header Files\Shader</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

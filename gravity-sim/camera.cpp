@@ -161,27 +161,20 @@ void Camera::Update(float dt)
 	}
 	else if (m_left_down)
 	{
-		// Issue: moving camera in circles causes the world to roll
-		// This is a consequence of allowing the camera to have the full two deg of freedom
-		// about the x and y axes.
+		glm::dquat pitch_rot(1.0, 0.0, 0.0, 0.0);
 
-		// len gives angle of rotation
-		// *** this method will cause erratic camera rotation if the framerate drops
-		// causing len to be large ***
-		double theta = m_config.CamSensitivity * len;
+		double dp = glm::dot(forward, glm::dvec3(0.0, 1.0, 0.0));
+		double pitch = glm::acos(dp) - (glm::pi<double>() / 2.0);
 
-		// transform p_hat from world -> camera space i.e. (x,y,0) -> (x', y', z')
-		glm::dvec3 p_cam_hat = glm::normalize(m_quat * pos_vec);
+		double upper_pitch_bound = 0.95 * glm::pi<double>() / 2.0;
+		double lower_pitch_bound = -1.0 * upper_pitch_bound;
 
-		// axis of rotation
-		glm::dvec3 r = glm::cross(p_cam_hat, forward);
-		// since we don't allow roll. This will improve noise.
-		r.z = 0.0;
-		r = glm::normalize(r);
+		if (!((m_dy > 0.0 && pitch > upper_pitch_bound) || (m_dy < 0.0 && pitch < lower_pitch_bound)))
+			pitch_rot = glm::angleAxis(-1.0 * m_dy * m_config.CamSensitivity, right);
 
-		glm::dquat q_operation = glm::angleAxis(theta, r);
+		glm::dquat yaw_rot = glm::angleAxis(m_dx * m_config.CamSensitivity, glm::dvec3(0.0, 1.0, 0.0));
 
-		m_quat = glm::normalize(q_operation * m_quat);
+		m_quat = glm::normalize(yaw_rot * pitch_rot * m_quat);
 
 		m_dx = 0;
 		m_dy = 0;
