@@ -102,7 +102,6 @@
     <None Include="resources\shaders\shader.vert">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="particle.h">

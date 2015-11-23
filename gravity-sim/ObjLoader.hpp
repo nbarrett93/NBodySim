@@ -8,6 +8,7 @@
 #include <sstream>
 #include <limits>
 #include <utility>
+#include <algorithm>
 #include <map>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
@@ -55,22 +56,21 @@ Model<T>::Model(Model<T> &&rhs) :
 {
 }
 
-template <size_t T>
-struct Face_
-{
-	uint16_t v[T];
-	uint16_t vt[T];
-	uint16_t vn[T];
-};
-
 template <size_t T = 3>
 Model<T> Model<T>::FromStream(std::istream &s)
 {
+	struct Face_
+	{
+		uint16_t v[T];
+		uint16_t vt[T];
+		uint16_t vn[T];
+	};
+
 	std::vector<glm::vec4> GeomVerts;
 	std::vector<glm::vec2> TexCoords;
 	std::vector<glm::vec3> Normals;
 	std::vector<glm::vec3> ParameterVerts;
-	std::vector< Face_<T> > Faces;
+	std::vector<Face_> Faces;
 
 	std::string buf;
 	float tmp[4];
@@ -168,7 +168,7 @@ Model<T> Model<T>::FromStream(std::istream &s)
 			break;
 		case 'f':
 			// face follows
-			Face_<T> face;
+			Face_ face;
 			while (s.peek() == ' ')
 				s.ignore(1);
 			if (s.peek() == '\r' || s.peek() == '\n')
@@ -244,11 +244,8 @@ Model<T> Model<T>::FromStream(std::istream &s)
 	bool have_tex = TexCoords.size() != 0;
 
 	uint16_t ix = 0;
-	// foreach (Face f : Faces)
-	for (uint32_t i = 0; i < Faces.size(); ++i)
+	for (auto &face : Faces)
 	{
-		Face_<T> &face = Faces[i];
-		
 		// foreach (Vert v : f)
 		for (uint32_t j = 0; j < T; ++j)
 		{
@@ -256,11 +253,9 @@ Model<T> Model<T>::FromStream(std::istream &s)
 			auto norm_i = face.vn[j];
 			auto tex_i = face.vt[j];
 
-			auto it_pair = cache.equal_range(pos_i);
-			if (std::get<0>(it_pair) == cache.end())
-			{
-				// it's a new vertex
+			auto new_vertex = [&]() {
 				ret.Indices.push_back(ix);
+
 				if (have_verts)
 					ret.Vertices.push_back(GeomVerts[pos_i]);
 				if (have_norm)
@@ -270,55 +265,35 @@ Model<T> Model<T>::FromStream(std::istream &s)
 
 				cache.insert(std::make_pair(
 					face.v[j],
-					std::make_tuple(norm_i, tex_i, ix)
+					std::make_tuple(norm_i, tex_i, ix++)
 					)
 				);
+			};
 
-				++ix;
+			auto it_pair = cache.equal_range(pos_i);
+			if (std::get<0>(it_pair) == cache.end())
+			{
+				new_vertex();
 			}
 			else
 			{
-				bool found_it = false;
-				uint16_t index = 0;
 				// it might be a re-usable vertex
 				// we have to check all vertices in the cache that have this index
-				for (auto x = it_pair.first;
-					x != it_pair.second && !found_it;
-					++x)
-				{
-					ValType &snd = std::get<1>(*x);
-					if (std::get<0>(snd) == norm_i && std::get<1>(snd) == tex_i)
-					{
-						// it's a match
-						// use the existing index
-						found_it = true;
-						index = std::get<2>(snd);
-					}
-				}
 
-				if (found_it)
-				{
-					ret.Indices.push_back(index);
-				}
+				auto &beg = it_pair.first;
+				auto &end = it_pair.second;
+
+				auto res = std::find_if(beg, end, [&](auto &tpl) {
+					// value of the K-V element
+					auto &snd = std::get<1>(tpl);
+					// normal index & texture index
+					return std::get<0>(snd) == norm_i && std::get<1>(snd) == tex_i;
+				});
+
+				if (res != end)
+					ret.Indices.push_back(std::get<2>(std::get<1>(*res)));
 				else
-				{
-					// we have to create a new index
-					ret.Indices.push_back(ix);
-					if (have_verts)
-						ret.Vertices.push_back(GeomVerts[pos_i]);
-					if (have_norm)
-						ret.Normals.push_back(Normals[norm_i]);
-					if (have_tex)
-						ret.TexCoords.push_back(TexCoords[tex_i]);
-
-					cache.insert(std::make_pair(
-						face.v[j],
-						std::make_tuple(norm_i, tex_i, ix)
-						)
-					);
-
-					++ix;
-				}
+					new_vertex();
 			}
 		}
 	}
