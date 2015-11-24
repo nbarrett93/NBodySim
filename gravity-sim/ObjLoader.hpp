@@ -246,7 +246,6 @@ Model<T> Model<T>::FromStream(std::istream &s)
 	uint16_t ix = 0;
 	for (auto &face : Faces)
 	{
-		// foreach (Vert v : f)
 		for (uint32_t j = 0; j < T; ++j)
 		{
 			auto pos_i = face.v[j];
@@ -277,12 +276,10 @@ Model<T> Model<T>::FromStream(std::istream &s)
 			}
 			else
 			{
-				// it might be a re-usable vertex
-				// we have to check all vertices in the cache that have this index
-
 				auto &beg = it_pair.first;
 				auto &end = it_pair.second;
 
+				// search for a re-usable vertex
 				auto res = std::find_if(beg, end, [&](auto &tpl) {
 					// value of the K-V element
 					auto &snd = std::get<1>(tpl);

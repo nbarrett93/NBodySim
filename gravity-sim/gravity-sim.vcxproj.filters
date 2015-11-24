@@ -152,6 +152,9 @@
     <ClInclude Include="ShaderMgr.h">
       <Filter>Header Files\Shader</Filter>
     </ClInclude>
+    <ClInclude Include="VertexAbstract.h">
+      <Filter>Header Files\Rendering</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Math.txt">

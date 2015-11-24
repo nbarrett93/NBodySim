@@ -19,11 +19,17 @@
 
 #include "ObjLoader.hpp"
 
+#include "VertexAbstract.h"
+
 static void error_callback(int error, const char* description)
 {
 	// TODO: make this go to log
 	std::cerr << description << std::endl;
 }
+
+int main();
+
+void test_abstract_vert();
 
 static void run_main_loop(SystemCL &&cl_state, GLFWwindow *window);
 
@@ -45,9 +51,6 @@ static void button_callback(GLFWwindow* window, int button, int action, int mods
 
 int main()
 {
-    // TODO: instantiate logger
-	// TODO: instantiate config reader
-
 	SystemCL cl_state;
 
 	cl_state.Load();
